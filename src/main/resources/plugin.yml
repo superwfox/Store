@@ -1,0 +1,13 @@
+name: Store
+version: '1'
+main: sudark2.Sudark.store.Store
+api-version: '1.20'
+commands:
+  store:
+    description: Store management
+    usage: /store [player|official|create|add]
+permissions:
+  store.admin:
+    description: Admin permissions
+    default: op
+

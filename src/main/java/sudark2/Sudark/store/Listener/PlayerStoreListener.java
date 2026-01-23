@@ -2,6 +2,7 @@ package sudark2.Sudark.store.Listener;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -59,8 +60,10 @@ public class PlayerStoreListener implements Listener {
                         FileManager.saveData();
                         p.closeInventory();
                         p.sendMessage("§7购买成功");
+                        p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
                     } else {
                         p.sendMessage("§7经验等级不足");
+                        p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.5f);
                     }
                 }
             }

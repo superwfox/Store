@@ -1,6 +1,7 @@
 package sudark2.Sudark.store.Menu;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -45,6 +46,7 @@ public class OfficialStoreMenu {
 
         viewingStore.put(p.getName(), npcKey);
         p.openInventory(inv);
+        p.playSound(p, Sound.BLOCK_BARREL_OPEN, 1, 1);
     }
 
     public static String getViewingStore(String name) {

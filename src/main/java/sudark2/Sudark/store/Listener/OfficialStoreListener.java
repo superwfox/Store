@@ -1,5 +1,6 @@
 package sudark2.Sudark.store.Listener;
 
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -40,6 +41,7 @@ public class OfficialStoreListener implements Listener {
                 OfficialStoreData.removeItem(npcKey, item);
                 OfficialStoreManager.saveStore(npcKey);
                 p.sendMessage("§7已删除商品");
+                p.playSound(p, Sound.BLOCK_BARREL_CLOSE, 1, 1);
                 String npcId = title.substring(OfficialStoreMenu.TITLE_PREFIX.length());
                 OfficialStoreMenu.openOfficialStore(p, npcKey, npcId);
             } else if (e.getClick() == ClickType.LEFT) {
@@ -47,8 +49,10 @@ public class OfficialStoreListener implements Listener {
                     p.setLevel(p.getLevel() - item.price);
                     p.getInventory().addItem(item.item.clone());
                     p.sendMessage("§7购买成功");
+                    p.playSound(p, Sound.ENTITY_VILLAGER_YES, 1, 1);
                 } else {
                     p.sendMessage("§7经验等级不足");
+                    p.playSound(p, Sound.ENTITY_VILLAGER_NO, 1, 1);
                 }
             }
         }

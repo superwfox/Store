@@ -1,5 +1,6 @@
 package sudark2.Sudark.store.File;
 
+import org.bukkit.Sound;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -81,6 +82,7 @@ public class TransactionManager {
             if (amount > 0) {
                 player.setLevel(player.getLevel() + amount);
                 player.sendMessage("§e您的商品已售出，获得 " + amount + " 级经验");
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1, 1);
                 
                 config.set(key, null);
                 try {

@@ -22,7 +22,7 @@ public class PlayerStoreMenu {
     public static void openPlayerStore(Player p) {
         Inventory inv = Bukkit.createInventory(null, 54, TITLE_PLAYER_STORE);
 
-        ItemStack sunflower = new ItemStack(Material.LEGACY_OBSIDIAN);
+        ItemStack sunflower = new ItemStack(Material.END_PORTAL_FRAME);
         ItemMeta sm = sunflower.getItemMeta();
         sm.setDisplayName("§e出售物品");
         sm.setLore(List.of("§7点击后 放入要出售的物品们", "§7退出自动保存 3分钟无操作取消"));

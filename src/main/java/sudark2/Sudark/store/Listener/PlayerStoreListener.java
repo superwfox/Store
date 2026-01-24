@@ -43,7 +43,7 @@ public class PlayerStoreListener implements Listener {
     private void handlePlayerStoreClick(InventoryClickEvent e, Player p, ItemStack clicked) {
         e.setCancelled(true);
         int slot = e.getSlot();
-        if (clicked.getType() == Material.LEGACY_OBSIDIAN && slot == 0) {
+        if (clicked.getType() == Material.END_PORTAL_FRAME && slot == 0) {
             PlayerStoreMenu.openSellInput(p);
             return;
         }

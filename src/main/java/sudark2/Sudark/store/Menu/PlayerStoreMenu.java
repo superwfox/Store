@@ -45,6 +45,11 @@ public class PlayerStoreMenu {
             lore.add("§f售价: §e" + item.price);
             lore.add("§f时间: §7" + item.time);
             lore.add("§f备注: " + item.info);
+            boolean canDelete = p.isOp() || item.playerId.equals(p.getUniqueId());
+            if (canDelete) {
+                lore.add("");
+                lore.add("§7右键可下架并返还物品");
+            }
             meta.setLore(lore);
             display.setItemMeta(meta);
 
@@ -78,6 +83,11 @@ public class PlayerStoreMenu {
         meta.setDisplayName("§e确认购买");
         List<String> lore = new ArrayList<>();
         lore.add("§f需要: §e" + item.price);
+        boolean canDelete = p.isOp() || item.playerId.equals(p.getUniqueId());
+        if (canDelete) {
+            lore.add("");
+            lore.add("§7右键物品可撤回单个物品");
+        }
         meta.setLore(lore);
         confirm.setItemMeta(meta);
         inv.setItem(53, confirm);

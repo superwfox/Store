@@ -9,40 +9,45 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 import org.bukkit.inventory.ItemStack;
 import sudark2.Sudark.store.Data.PlayerStoreData;
 import sudark2.Sudark.store.File.FileManager;
 import sudark2.Sudark.store.File.TransactionManager;
+import sudark2.Sudark.store.Menu.OfficialStoreMenu;
 import sudark2.Sudark.store.Menu.PlayerStoreMenu;
+import sudark2.Sudark.store.Menu.QuickMenu;
 import sudark2.Sudark.store.Menu.SellManager;
 
 import java.util.List;
 
 import static sudark2.Sudark.store.Store.getInstance;
+import static sudark2.Sudark.store.Util.MethodUtil.isLocValid;
 
 public class PlayerStoreListener implements Listener {
 
     @EventHandler
     public void onPlayerStoreClick(InventoryClickEvent e) {
-        if (!(e.getWhoClicked() instanceof Player p)) return;
+        if (!(e.getWhoClicked() instanceof Player p))
+            return;
         String title = e.getView().getTitle();
         ItemStack clicked = e.getCurrentItem();
-        
-        if (clicked == null || clicked.getType() == Material.AIR) return;
+
+        if (clicked == null || clicked.getType() == Material.AIR)
+            return;
 
         if (title.equals(PlayerStoreMenu.TITLE_PLAYER_STORE)) {
             e.setCancelled(true);
-            if (clicked.getType() == Material.SUNFLOWER) {
+            int slot = e.getSlot();
+            if (clicked.getType() == Material.LEGACY_OBSIDIAN && slot == 0) {
                 PlayerStoreMenu.openSellInput(p);
-            } else if (clicked.getType() == Material.PLAYER_HEAD) {
-                int slot = e.getSlot();
+            } else if (slot > 0 && slot < 54) {
                 List<PlayerStoreData.PlayerItem> items = PlayerStoreData.getPlayerItems();
-                if (slot > 0 && slot <= items.size()) {
+                if (slot <= items.size()) {
                     PlayerStoreMenu.openPlayerItemView(p, items.get(slot - 1));
                 }
             }
-        }
-        else if (title.equals(PlayerStoreMenu.TITLE_ITEM_DETAIL)) {
+        } else if (title.equals(PlayerStoreMenu.TITLE_ITEM_DETAIL)) {
             e.setCancelled(true);
             if (e.getSlot() == 53 && clicked.getType() == Material.GOLD_INGOT && e.getClick() == ClickType.LEFT) {
                 PlayerStoreData.PlayerItem item = PlayerStoreMenu.getViewingItem(p.getUniqueId());
@@ -52,10 +57,10 @@ public class PlayerStoreListener implements Listener {
                         for (ItemStack stack : item.items) {
                             p.getInventory().addItem(stack.clone());
                         }
-                        
+
                         TransactionManager.recordTransaction(item.playerName, p.getName(), item.price, item.items);
                         TransactionManager.addPayback(item.playerId, item.playerName, item.price);
-                        
+
                         PlayerStoreData.removePlayerItem(item);
                         FileManager.saveData();
                         p.closeInventory();
@@ -67,26 +72,34 @@ public class PlayerStoreListener implements Listener {
                     }
                 }
             }
-        }
-        else if (title.equals(PlayerStoreMenu.TITLE_SELL_INPUT)) {
+        } else if (title.equals(PlayerStoreMenu.TITLE_SELL_INPUT)) {
+        } else if (title.equals(QuickMenu.TITLE)) {
+            e.setCancelled(true);
+            int slot = e.getSlot();
+            if (slot == 11 && clicked.getType() == Material.GOLD_INGOT) {
+                PlayerStoreMenu.openPlayerStore(p);
+            } else if (slot == 15 && clicked.getType() == Material.NETHERITE_INGOT) {
+                OfficialStoreMenu.openOfficialStore(p);
+            }
         }
     }
 
     @EventHandler
     public void onPlayerStoreClose(InventoryCloseEvent e) {
-        if (!(e.getPlayer() instanceof Player p)) return;
+        if (!(e.getPlayer() instanceof Player p))
+            return;
         String title = e.getView().getTitle();
 
         if (title.equals(PlayerStoreMenu.TITLE_SELL_INPUT)) {
-            Bukkit.getScheduler().runTaskLater(getInstance(), () -> {
-                SellManager.handleSellClose(p, e.getInventory());
-            }, 1L);
-        }
-        else if (title.equals(PlayerStoreMenu.TITLE_ITEM_DETAIL)) {
+            SellManager.handleSellClose(p, e.getInventory());
+        } else if (title.equals(PlayerStoreMenu.TITLE_ITEM_DETAIL)) {
             PlayerStoreData.PlayerItem item = PlayerStoreMenu.getViewingItem(p.getUniqueId());
             if (item != null) {
                 PlayerStoreMenu.removeViewingItem(p.getUniqueId());
-                PlayerStoreMenu.openPlayerStore(p);
+                Bukkit.getScheduler().runTaskLater(getInstance(), () -> {
+                    PlayerStoreMenu.openPlayerStore(p);
+                }, 1L);
+
             }
         }
     }

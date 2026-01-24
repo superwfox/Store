@@ -3,13 +3,15 @@ package sudark2.Sudark.store.Command;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import sudark2.Sudark.store.Data.OfficialStoreData;
+import sudark2.Sudark.store.Data.UniqueStoreData;
 import sudark2.Sudark.store.File.FileManager;
 import sudark2.Sudark.store.File.OfficialStoreManager;
+import sudark2.Sudark.store.File.UniqueStoreManager;
 import sudark2.Sudark.store.Menu.OfficialStoreMenu;
+import sudark2.Sudark.store.Menu.UniqueStoreMenu;
 import sudark2.Sudark.store.Menu.PlayerStoreMenu;
 import sudark2.Sudark.store.NPC.InitNPC;
 import sudark2.Sudark.store.Util.MethodUtil;
@@ -17,17 +19,16 @@ import sudark2.Sudark.store.Util.MethodUtil;
 import java.util.Optional;
 
 import static sudark2.Sudark.store.File.FileManager.loadNPCs;
+import static sudark2.Sudark.store.Util.MethodUtil.isLocValid;
 
 public class StoreCommand implements CommandExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player p)) {
             sender.sendMessage("§7仅玩家可用");
             return true;
         }
-
-        Player p = (Player) sender;
 
         if (args.length == 0) {
             PlayerStoreMenu.openPlayerStore(p);
@@ -50,21 +51,29 @@ public class StoreCommand implements CommandExecutor {
                 break;
 
             case "player":
-                PlayerStoreMenu.openPlayerStore(p);
+                if (isLocValid(p)) PlayerStoreMenu.openPlayerStore(p);
                 break;
 
             case "official":
+                if (isLocValid(p)) OfficialStoreMenu.openOfficialStore(p);
+                break;
+
+            case "check":
+                if (!p.isOp()) {
+                    p.sendMessage("§7无权限");
+                    return true;
+                }
                 if (args.length < 2) {
-                    p.sendMessage("§7用法: /store official <商店ID>");
+                    p.sendMessage("§7用法: /store check <商店ID>");
                     return true;
                 }
                 String npcId = args[1];
-                String npcKey = OfficialStoreData.getNPCKey(npcId);
+                String npcKey = UniqueStoreData.getNPCKey(npcId);
                 if (npcKey == null) {
                     p.sendMessage("§7商店不存在");
                     return true;
                 }
-                OfficialStoreMenu.openOfficialStore(p, npcKey, npcId);
+                UniqueStoreMenu.openUniqueStore(p, npcKey, npcId);
                 break;
 
             case "add":
@@ -85,7 +94,8 @@ public class StoreCommand implements CommandExecutor {
 
                 try {
                     int price = Integer.parseInt(args[1]);
-                    String info = args.length > 2 ? String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length)) : "§7无";
+                    String info = args.length > 2 ? String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length))
+                            : "§7无";
 
                     Optional<String> nearestKey = MethodUtil.findNearestNPC(p, 50);
                     if (!nearestKey.isPresent()) {
@@ -94,28 +104,65 @@ public class StoreCommand implements CommandExecutor {
                     }
 
                     String targetKey = nearestKey.get();
-                    OfficialStoreData.OfficialItem item = new OfficialStoreData.OfficialItem(hand.clone(), price, info);
-                    OfficialStoreData.addItem(targetKey, item);
-                    OfficialStoreManager.saveStore(targetKey);
+                    UniqueStoreData.UniqueItem item = new UniqueStoreData.UniqueItem(hand.clone(), price, info);
+                    UniqueStoreData.addItem(targetKey, item);
+                    UniqueStoreManager.saveStore(targetKey);
                     p.sendMessage("§7已添加商品到最近的商店");
                 } catch (NumberFormatException e) {
                     p.sendMessage("§7价格必须为整数");
                 }
                 break;
-                
+
+            case "update":
+                if (!p.isOp()) {
+                    p.sendMessage("§7无权限");
+                    return true;
+                }
+                if (args.length < 2) {
+                    p.sendMessage("§7用法: /store update <价格> [备注]");
+                    return true;
+                }
+
+                ItemStack updateHand = p.getInventory().getItemInMainHand();
+                if (updateHand.getType() == org.bukkit.Material.AIR) {
+                    p.sendMessage("§7请手持物品");
+                    return true;
+                }
+
+                try {
+                    int updatePrice = Integer.parseInt(args[1]);
+                    String updateInfo = args.length > 2
+                            ? String.join(" ", java.util.Arrays.copyOfRange(args, 2, args.length))
+                            : "§7无";
+
+                    if (OfficialStoreData.getOfficialItems().size() >= 54) {
+                        p.sendMessage("§7官方商店已满");
+                        return true;
+                    }
+
+                    OfficialStoreData.OfficialItem officialItem = new OfficialStoreData.OfficialItem(updateHand.clone(),
+                            updatePrice, updateInfo);
+                    OfficialStoreData.addItem(officialItem);
+                    OfficialStoreManager.saveAll();
+                    p.sendMessage("§7已添加商品到官方商店");
+                } catch (NumberFormatException e) {
+                    p.sendMessage("§7价格必须为整数");
+                }
+                break;
+
             case "reload":
                 if (!p.isOp()) {
                     p.sendMessage("§7无权限");
                     return true;
                 }
-                OfficialStoreData.clearAll();
+                UniqueStoreData.clearAll();
                 FileManager.loadData();
 
                 org.bukkit.Bukkit.dispatchCommand(org.bukkit.Bukkit.getConsoleSender(), "npc remove all");
                 loadNPCs();
                 p.sendMessage("§e已重载插件并重置所有NPC");
                 break;
-                
+
             case "destroy":
                 if (!p.isOp()) {
                     p.sendMessage("§7无权限");
@@ -126,17 +173,17 @@ public class StoreCommand implements CommandExecutor {
                     return true;
                 }
                 String destroyId = args[1];
-                String destroyKey = OfficialStoreData.getNPCKey(destroyId);
+                String destroyKey = UniqueStoreData.getNPCKey(destroyId);
                 if (destroyKey == null) {
                     p.sendMessage("§7商店不存在");
                     return true;
                 }
-                
+
                 org.bukkit.Bukkit.dispatchCommand(org.bukkit.Bukkit.getConsoleSender(), "npc remove " + destroyId);
-                OfficialStoreData.removeNPC(destroyId);
-                OfficialStoreData.removeStore(destroyKey);
-                OfficialStoreManager.deleteStore(destroyKey);
-                OfficialStoreManager.saveAll();
+                UniqueStoreData.removeNPC(destroyId);
+                UniqueStoreData.removeStore(destroyKey);
+                UniqueStoreManager.deleteStore(destroyKey);
+                UniqueStoreManager.saveAll();
                 p.sendMessage("§e已销毁商店: " + destroyId);
                 break;
 

@@ -38,16 +38,24 @@ public class SellManager {
         inputTimeout.put(uuid, timeout);
         waitingForPrice.add(uuid);
 
-        p.sendMessage("§e请在聊天栏输入价格（纯数字）");
-        
+        p.sendMessage("请在§e聊天栏§f输入价格§7[整数]");
+
         Bukkit.getScheduler().runTaskLater(getInstance(), () -> {
             if (waitingForPrice.contains(uuid) || waitingForInfo.contains(uuid)) {
                 waitingForPrice.remove(uuid);
                 waitingForInfo.remove(uuid);
-                pendingSell.remove(uuid);
+
                 pendingPrice.remove(uuid);
                 inputTimeout.remove(uuid);
-                p.sendMessage("§7输入超时，上架已取消");
+                p.sendMessage("§7输入超时 物品已返还");
+                List<ItemStack> stacks = pendingSell.remove(uuid);
+                for (ItemStack stack : stacks) {
+                    if (p.getInventory().firstEmpty() == -1) {
+                        p.getWorld().dropItem(p.getLocation(), stack);
+                    } else {
+                        p.getInventory().addItem(stack);
+                    }
+                }
             }
         }, 3600L);
     }
@@ -61,9 +69,9 @@ public class SellManager {
             pendingPrice.put(uuid, price);
             waitingForPrice.remove(uuid);
             waitingForInfo.add(uuid);
-            p.sendMessage("§e请在聊天栏输入备注信息（输入”无“表示无备注）");
+            p.sendMessage("请在§e聊天栏§f输入备注信息");
         } catch (NumberFormatException e) {
-            p.sendMessage("§7价格必须为整数，请重新输入");
+            p.sendMessage("§7价格必须为§f整数§7请重新输入");
         }
     }
 
@@ -88,7 +96,7 @@ public class SellManager {
         PlayerStoreData.addPlayerItem(item);
         FileManager.saveData();
 
-        p.sendMessage("§e商品已上架");
+        p.sendMessage("§e商品§f§l 已上架");
     }
 
     public static boolean isWaitingForPrice(UUID uuid) {

@@ -3,7 +3,7 @@ package sudark2.Sudark.store.Command;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import sudark2.Sudark.store.Data.OfficialStoreData;
+import sudark2.Sudark.store.Data.UniqueStoreData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,9 +15,9 @@ public class StoreTabCompleter implements TabCompleter {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            List<String> options = new ArrayList<>(List.of("player"));
+            List<String> options = new ArrayList<>(List.of("player", "official"));
             if (sender.isOp()) {
-                options.addAll(List.of("add", "official", "create", "reload", "destroy"));
+                options.addAll(List.of("add", "check", "create", "reload", "destroy", "update"));
             }
 
             String input = args[0].toLowerCase();
@@ -31,13 +31,19 @@ public class StoreTabCompleter implements TabCompleter {
                 completions.add("<商店ID>");
             } else if (args[0].equalsIgnoreCase("add") && sender.isOp()) {
                 completions.add("<价格>");
-            } else if (args[0].equalsIgnoreCase("official")) {
-                completions.addAll(OfficialStoreData.getNPCMapping().keySet());
+            } else if (args[0].equalsIgnoreCase("update") && sender.isOp()) {
+                completions.add("<价格>");
+            } else if (args[0].equalsIgnoreCase("check")) {
+                completions.addAll(UniqueStoreData.getNPCMapping().keySet());
             } else if (args[0].equalsIgnoreCase("destroy") && sender.isOp()) {
-                completions.addAll(OfficialStoreData.getNPCMapping().keySet());
+                completions.addAll(UniqueStoreData.getNPCMapping().keySet());
             }
-        } else if (args.length == 3 && args[0].equalsIgnoreCase("add") && sender.isOp()) {
-            completions.add("[备注]");
+        } else if (args.length == 3) {
+            if (args[0].equalsIgnoreCase("add") && sender.isOp()) {
+                completions.add("[备注]");
+            } else if (args[0].equalsIgnoreCase("update") && sender.isOp()) {
+                completions.add("[备注]");
+            }
         }
 
         return completions;

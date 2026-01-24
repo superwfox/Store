@@ -42,4 +42,13 @@ public class MethodUtil {
                 y + "_" +
                 z;
     }
+
+    public static boolean isLocValid(Player pl) {
+        if (pl.isOp()) return true;
+        if (!pl.getWorld().getName().equals("world")) {
+            pl.sendMessage("[§e商店§f] §7只能在主世界使用");
+            return false;
+        }
+        return true;
+    }
 }

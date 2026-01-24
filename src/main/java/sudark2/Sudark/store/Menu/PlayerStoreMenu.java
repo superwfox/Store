@@ -6,7 +6,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.SkullMeta;
 import sudark2.Sudark.store.Data.PlayerStoreData;
 
 import java.util.*;
@@ -22,29 +21,33 @@ public class PlayerStoreMenu {
     public static void openPlayerStore(Player p) {
         Inventory inv = Bukkit.createInventory(null, 54, TITLE_PLAYER_STORE);
 
-        ItemStack sunflower = new ItemStack(Material.SUNFLOWER);
+        ItemStack sunflower = new ItemStack(Material.LEGACY_OBSIDIAN);
         ItemMeta sm = sunflower.getItemMeta();
         sm.setDisplayName("§e出售物品");
+        sm.setLore(List.of("§7点击后 放入要出售的物品们", "§7退出自动保存 3分钟无操作取消"));
         sunflower.setItemMeta(sm);
         inv.setItem(0, sunflower);
 
         List<PlayerStoreData.PlayerItem> items = PlayerStoreData.getPlayerItems();
         int slot = 1;
         for (PlayerStoreData.PlayerItem item : items) {
-            if (slot >= 54) break;
+            if (slot >= 54)
+                break;
+            if (item.items.isEmpty())
+                continue;
 
-            ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
-            SkullMeta meta = (SkullMeta) skull.getItemMeta();
-            meta.setDisplayName("§e" + item.playerName);
-            meta.setOwningPlayer(Bukkit.getOfflinePlayer(item.playerId));
-            List<String> lore = new ArrayList<>();
-            lore.add("§f售价: §e" + item.price + " §f级");
+            ItemStack display = item.items.get(0).clone();
+            ItemMeta meta = display.getItemMeta();
+            List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+            lore.add("");
+            lore.add("§f卖家: §e" + item.playerName);
+            lore.add("§f售价: §e" + item.price);
             lore.add("§f时间: §7" + item.time);
             lore.add("§f备注: " + item.info);
             meta.setLore(lore);
-            skull.setItemMeta(meta);
+            display.setItemMeta(meta);
 
-            inv.setItem(slot++, skull);
+            inv.setItem(slot++, display);
         }
 
         p.openInventory(inv);
@@ -60,15 +63,16 @@ public class PlayerStoreMenu {
 
         int slot = 0;
         for (ItemStack stack : item.items) {
-            if (slot >= 53) break;
-            inv.setItem(slot++, stack);
+            if (slot >= 53)
+                break;
+            inv.setItem(slot++, stack.clone());
         }
 
         ItemStack confirm = new ItemStack(Material.GOLD_INGOT);
         ItemMeta meta = confirm.getItemMeta();
         meta.setDisplayName("§e确认购买");
         List<String> lore = new ArrayList<>();
-        lore.add("§f需要: §e" + item.price + " §f级");
+        lore.add("§f需要: §e" + item.price);
         meta.setLore(lore);
         confirm.setItemMeta(meta);
         inv.setItem(53, confirm);

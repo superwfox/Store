@@ -20,63 +20,70 @@ public class FileManager {
     public static void init(JavaPlugin p) {
         plugin = p;
         dataFolder = p.getDataFolder();
-        if (!dataFolder.exists()) dataFolder.mkdirs();
-        
+        if (!dataFolder.exists())
+            dataFolder.mkdirs();
+
         itemsFolder = new File(dataFolder, "items");
-        if (!itemsFolder.exists()) itemsFolder.mkdirs();
-        
+        if (!itemsFolder.exists())
+            itemsFolder.mkdirs();
+
         configFile = new File(dataFolder, "data.yml");
-        
+
+        UniqueStoreManager.init(dataFolder);
         OfficialStoreManager.init(dataFolder);
         TransactionManager.init(dataFolder);
     }
 
     public static void loadData() {
         loadPlayerItems();
+        UniqueStoreManager.loadAll();
         OfficialStoreManager.loadAll();
     }
 
     public static void loadNPCs() {
         File npcListFile = new File(dataFolder, "npcList.yml");
-        if (!npcListFile.exists()) return;
-        
+        if (!npcListFile.exists())
+            return;
+
         YamlConfiguration config = YamlConfiguration.loadConfiguration(npcListFile);
-        
+
         for (String npcId : config.getKeys(false)) {
             String npcKey = config.getString(npcId);
-            if (npcKey == null) continue;
-            
+            if (npcKey == null)
+                continue;
+
             String[] parts = npcKey.split("_");
-            if (parts.length != 4) continue;
-            
+            if (parts.length != 4)
+                continue;
+
             String worldName = parts[0];
             String x = parts[1];
             String y = parts[2];
             String z = parts[3];
-            
-            String command = String.format("npc create %s --at %s,%s,%s,%s", 
-                npcId, x, y, z, worldName);
-            
+
+            String command = String.format("npc create %s --at %s,%s,%s,%s",
+                    npcId, x, y, z, worldName);
+
             org.bukkit.Bukkit.getScheduler().runTask(plugin, () -> {
                 org.bukkit.Bukkit.dispatchCommand(
-                    org.bukkit.Bukkit.getConsoleSender(), 
-                    command
-                );
+                        org.bukkit.Bukkit.getConsoleSender(),
+                        command);
             });
         }
     }
 
     public static void saveData() {
         savePlayerItems();
-        OfficialStoreManager.saveAll();
+        UniqueStoreManager.saveAll();
     }
 
     private static void loadPlayerItems() {
-        if (!configFile.exists()) return;
-        
+        if (!configFile.exists())
+            return;
+
         YamlConfiguration config = YamlConfiguration.loadConfiguration(configFile);
         PlayerStoreData.clearAll();
-        
+
         List<Map<?, ?>> playerList = config.getMapList("playerItems");
         for (Map<?, ?> map : playerList) {
             try {
@@ -86,7 +93,7 @@ public class FileManager {
                 String time = (String) map.get("time");
                 String info = (String) map.get("info");
                 String itemFile = (String) map.get("itemFile");
-                
+
                 List<ItemStack> items = loadItems(itemFile);
                 PlayerStoreData.PlayerItem item = new PlayerStoreData.PlayerItem(name, id, items, price, time, info);
                 PlayerStoreData.addPlayerItem(item);
@@ -98,24 +105,24 @@ public class FileManager {
 
     private static void savePlayerItems() {
         YamlConfiguration config = new YamlConfiguration();
-        
+
         List<Map<String, Object>> playerList = new ArrayList<>();
         for (PlayerStoreData.PlayerItem item : PlayerStoreData.getPlayerItems()) {
             Map<String, Object> map = new HashMap<>();
             String fileName = "player_" + item.playerId.toString() + "_" + System.currentTimeMillis() + ".dat";
-            
+
             map.put("name", item.playerName);
             map.put("uuid", item.playerId.toString());
             map.put("price", item.price);
             map.put("time", item.time);
             map.put("info", item.info);
             map.put("itemFile", fileName);
-            
+
             saveItems(fileName, item.items);
             playerList.add(map);
         }
         config.set("playerItems", playerList);
-        
+
         try {
             config.save(configFile);
         } catch (IOException e) {
@@ -137,8 +144,9 @@ public class FileManager {
 
     private static List<ItemStack> loadItems(String fileName) {
         File file = new File(itemsFolder, fileName);
-        if (!file.exists()) return new ArrayList<>();
-        
+        if (!file.exists())
+            return new ArrayList<>();
+
         List<ItemStack> items = new ArrayList<>();
         try (BukkitObjectInputStream in = new BukkitObjectInputStream(new FileInputStream(file))) {
             int size = in.readInt();
@@ -151,5 +159,3 @@ public class FileManager {
         return items;
     }
 }
-
-

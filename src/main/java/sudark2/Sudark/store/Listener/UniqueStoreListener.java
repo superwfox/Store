@@ -6,22 +6,23 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.ItemStack;
-import sudark2.Sudark.store.Data.OfficialStoreData;
-import sudark2.Sudark.store.File.OfficialStoreManager;
-import sudark2.Sudark.store.Menu.OfficialStoreMenu;
+import sudark2.Sudark.store.Data.UniqueStoreData;
+import sudark2.Sudark.store.File.UniqueStoreManager;
+import sudark2.Sudark.store.Menu.UniqueStoreMenu;
 
 import java.util.List;
 
-public class OfficialStoreListener implements Listener {
+public class UniqueStoreListener implements Listener {
 
     @EventHandler
-    public void onOfficialStoreClick(InventoryClickEvent e) {
+    public void onUniqueStoreClick(InventoryClickEvent e) {
         if (!(e.getWhoClicked() instanceof Player p))
             return;
         String title = e.getView().getTitle();
 
-        if (!title.equals(OfficialStoreMenu.TITLE))
+        if (!title.startsWith(UniqueStoreMenu.TITLE_PREFIX))
             return;
 
         ItemStack clicked = e.getCurrentItem();
@@ -30,19 +31,23 @@ public class OfficialStoreListener implements Listener {
 
         e.setCancelled(true);
 
-        List<OfficialStoreData.OfficialItem> items = OfficialStoreData.getOfficialItems();
+        String npcKey = UniqueStoreMenu.getViewingStore(p.getName());
+        if (npcKey == null)
+            return;
+
+        List<UniqueStoreData.UniqueItem> items = UniqueStoreData.getStoreItems(npcKey);
         int slot = e.getSlot();
 
         if (slot >= 0 && slot < items.size()) {
-            OfficialStoreData.OfficialItem item = items.get(slot);
+            UniqueStoreData.UniqueItem item = items.get(slot);
 
             if (e.getClick() == ClickType.RIGHT && p.isOp()) {
-                OfficialStoreData.removeItem(slot);
-                OfficialStoreManager.cleanupItemFiles();
-                OfficialStoreManager.saveAll();
+                UniqueStoreData.removeItem(npcKey, item);
+                UniqueStoreManager.saveStore(npcKey);
                 p.sendMessage("§7已删除商品");
                 p.playSound(p, Sound.BLOCK_BARREL_CLOSE, 1, 1);
-                OfficialStoreMenu.openOfficialStore(p);
+                String npcId = title.substring(UniqueStoreMenu.TITLE_PREFIX.length());
+                UniqueStoreMenu.openUniqueStore(p, npcKey, npcId);
             } else if (e.getClick() == ClickType.LEFT) {
                 if (p.getLevel() >= item.price) {
                     p.setLevel(p.getLevel() - item.price);
@@ -54,6 +59,18 @@ public class OfficialStoreListener implements Listener {
                     p.playSound(p, Sound.ENTITY_VILLAGER_NO, 1, 1);
                 }
             }
+        }
+    }
+
+    @EventHandler
+    public void onUniqueStoreClose(InventoryCloseEvent e) {
+        if (!(e.getPlayer() instanceof Player))
+            return;
+        Player p = (Player) e.getPlayer();
+        String title = e.getView().getTitle();
+
+        if (title.startsWith(UniqueStoreMenu.TITLE_PREFIX)) {
+            UniqueStoreMenu.removeViewingStore(p.getName());
         }
     }
 }

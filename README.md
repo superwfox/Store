@@ -1,21 +1,31 @@
 # Store - 经验等级商店插件
 
-基于 Spigot 1.20.1 的服务器商店系统，使用玩家经验等级作为交易货币。支持玩家自由上架物品和管理员创建官方NPC商店。
+基于 Spigot 1.20.1 的服务器商店系统，使用玩家经验等级作为交易货币。支持玩家自由上架物品、全局官方商店和NPC特殊商店。
 
 ## 主要功能
 
 ### 玩家商店
 - 任意玩家可通过 `/store` 打开商店界面
 - 点击向日葵图标进入出售流程，将物品放入界面后关闭，按提示输入价格和备注
-- 商品以玩家头颅形式展示，显示卖家名称、价格、发布时间和备注
+- 商品直接展示实际物品（首个物品），显示卖家名称、价格、发布时间和备注
 - 点击商品查看详情，确认后扣除相应经验等级完成购买
 - 买家获得物品，卖家下次上线时收到经验补偿
 
-### 官方商店
+### 官方商店（全局）
+- 通过 `/store official` 或快捷菜单打开
+- 管理员使用 `/store update <价格> [备注]` 将手持物品添加到官方商店
+- 左键购买商品，OP可右键删除商品
+- 最大容量54格
+
+### 特殊商店（NPC绑定）
 - 管理员使用 `/store create <ID>` 在当前位置创建NPC商店
 - 使用 `/store add <价格> [备注]` 将手持物品添加到最近的NPC商店
-- 右键点击NPC打开商店界面，左键购买商品
+- 右键点击NPC打开商店界面，使用 `/store check <ID>` 通过命令打开
 - OP可右键删除商品
+
+### 快捷菜单
+- 在 `world` 世界中蹲下并按 `F` 键（交换手持物品键）打开快捷菜单
+- 点击金锭打开玩家商店，点击合金锭打开官方商店
 
 ### 交易系统
 - 使用玩家经验等级作为货币
@@ -33,20 +43,25 @@ src/main/java/sudark2/Sudark/store/
 │   ├── StoreCommand.java         # 处理 /store 及其子命令
 │   └── StoreTabCompleter.java    # Tab补全
 ├── Listener/
-│   ├── PlayerStoreListener.java  # 玩家商店GUI交互：出售/购买/详情
-│   ├── OfficialStoreListener.java# 官方商店GUI交互：购买/删除
+│   ├── PlayerStoreListener.java  # 玩家商店GUI交互：出售/购买/详情/快捷菜单
+│   ├── OfficialStoreListener.java# 特殊商店GUI交互：购买/删除
+│   ├── GlobalStoreListener.java  # 官方商店GUI交互：购买/删除
 │   ├── EntityClickEvent.java     # 右键NPC触发商店
 │   └── PlayerJoinListener.java   # 玩家登录时发放离线收益
 ├── Menu/
 │   ├── PlayerStoreMenu.java      # 构建玩家商店/详情/出售界面
-│   ├── OfficialStoreMenu.java    # 构建官方商店界面
+│   ├── OfficialStoreMenu.java    # 构建特殊商店界面
+│   ├── GlobalStoreMenu.java      # 构建官方商店界面
+│   ├── QuickMenu.java            # 构建快捷选择菜单
 │   └── SellManager.java          # 出售流程：等待价格输入→备注输入→存储
 ├── Data/
 │   ├── PlayerStoreData.java      # 玩家商品内存缓存
-│   └── OfficialStoreData.java    # 官方商店内存缓存 + NPC映射
+│   ├── OfficialStoreData.java    # 特殊商店内存缓存 + NPC映射
+│   └── GlobalStoreData.java      # 官方商店内存缓存
 ├── File/
 │   ├── FileManager.java          # 玩家商品的加载/保存
-│   ├── OfficialStoreManager.java # 官方商店的加载/保存
+│   ├── OfficialStoreManager.java # 特殊商店的加载/保存
+│   ├── GlobalStoreManager.java   # 官方商店的加载/保存
 │   └── TransactionManager.java   # 交易记录与离线收益
 ├── Inventory/
 │   └── ChatInput.java            # 聊天输入监听（价格/备注）
@@ -62,12 +77,15 @@ src/main/java/sudark2/Sudark/store/
 plugins/Store/
 ├── data.yml              # 玩家商品元数据（卖家、价格、时间、物品文件名）
 ├── npcList.yml           # NPC映射：商店ID → world_x_y_z
+├── OfficialData.yml      # 官方商店商品元数据
 ├── payback.yml           # 离线卖家待发放经验
 ├── Records.csv           # 交易日志
 ├── items/                # 玩家商品序列化文件
 │   └── player_<uuid>_<timestamp>.dat
-└── officialStores/       # 官方商店商品序列化文件
-    └── <world_x_y_z>.dat
+├── officialStores/       # 特殊商店商品序列化文件
+│   └── <world_x_y_z>.dat
+└── OfficialItems/        # 官方商店商品序列化文件
+    └── <index>.dat
 ```
 
 ---
@@ -80,7 +98,9 @@ plugins/Store/
 |------|------|
 | `/store` | 打开玩家商店 |
 | `/store player` | 同上 |
-| `/store official <ID>` | 打开指定ID的官方商店 |
+| `/store official` | 打开官方商店 |
+
+**快捷打开**：在 `world` 世界中蹲下按 `F` 键打开选择菜单
 
 **出售物品流程**：
 1. 执行 `/store` 打开玩家商店
@@ -91,7 +111,7 @@ plugins/Store/
 6. 商品上架成功
 
 **购买物品**：
-1. 在玩家商店点击商品头颅查看详情
+1. 在玩家商店点击商品查看详情
 2. 点击右下角 **金锭** 确认购买
 3. 经验等级足够则购买成功，物品存入背包
 
@@ -99,12 +119,14 @@ plugins/Store/
 
 | 命令 | 说明 |
 |------|------|
-| `/store create <ID>` | 在当前位置创建名为ID的商店NPC |
-| `/store add <价格> [备注]` | 将手持物品添加到最近的NPC商店 |
-| `/store destroy <ID>` | 删除指定商店及其数据 |
+| `/store create <ID>` | 在当前位置创建名为ID的特殊商店NPC |
+| `/store add <价格> [备注]` | 将手持物品添加到最近的NPC特殊商店 |
+| `/store update <价格> [备注]` | 将手持物品添加到官方商店 |
+| `/store check <ID>` | 打开指定ID的特殊商店 |
+| `/store destroy <ID>` | 删除指定特殊商店及其数据 |
 | `/store reload` | 重载插件数据并重建所有NPC |
 
-**创建官方商店示例**：
+**创建特殊商店示例**：
 ```
 # 站在目标位置执行
 /store create 武器店
@@ -113,20 +135,20 @@ plugins/Store/
 /store add 50 锋利V附魔
 ```
 
+**添加官方商店商品**：
+```
+# 手持物品执行
+/store update 100 限定商品
+```
+
 **删除商品**：  
-OP在官方商店界面中 **右键** 商品即可删除。
+OP在官方商店或特殊商店界面中 **右键** 商品即可删除。
 
 ### 依赖
 
 - Spigot/Paper 1.20.1+
 - [Citizens](https://www.spigotmc.org/resources/citizens.13811/) 插件（用于NPC创建）
 
-### 构建
-
-```bash
-mvn clean package
-```
-生成的jar位于 `target/Store-1.0.jar`
 
 ---
 

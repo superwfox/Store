@@ -1,6 +1,5 @@
 package sudark2.Sudark.store;
 
-import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import sudark2.Sudark.store.Command.StoreCommand;
 import sudark2.Sudark.store.Command.StoreTabCompleter;
@@ -8,7 +7,8 @@ import sudark2.Sudark.store.File.FileManager;
 import sudark2.Sudark.store.Inventory.ChatInput;
 import sudark2.Sudark.store.Listener.EntityClickEvent;
 import sudark2.Sudark.store.Listener.OfficialStoreListener;
-import sudark2.Sudark.store.Listener.PlayerJoinListener;
+import sudark2.Sudark.store.Listener.UniqueStoreListener;
+import sudark2.Sudark.store.Listener.PlayerGlobalListener;
 import sudark2.Sudark.store.Listener.PlayerStoreListener;
 
 public final class Store extends JavaPlugin {
@@ -25,9 +25,10 @@ public final class Store extends JavaPlugin {
         getCommand("store").setTabCompleter(new StoreTabCompleter());
         getServer().getPluginManager().registerEvents(new PlayerStoreListener(), this);
         getServer().getPluginManager().registerEvents(new OfficialStoreListener(), this);
+        getServer().getPluginManager().registerEvents(new UniqueStoreListener(), this);
         getServer().getPluginManager().registerEvents(new ChatInput(), this);
         getServer().getPluginManager().registerEvents(new EntityClickEvent(), this);
-        getServer().getPluginManager().registerEvents(new PlayerJoinListener(), this);
+        getServer().getPluginManager().registerEvents(new PlayerGlobalListener(), this);
     }
 
     @Override

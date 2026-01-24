@@ -62,6 +62,7 @@ public class PlayerStoreListener implements Listener {
                             PlayerStoreMenu.openPlayerStore(p);
                         } else {
                             p.sendMessage("§7无权下架此商品");
+                            p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_NO, 1, 1);
                         }
                     } else {
                         PlayerStoreMenu.openPlayerItemView(p, item);
@@ -78,6 +79,7 @@ public class PlayerStoreListener implements Listener {
                 boolean canDelete = p.isOp() || item.playerId.equals(p.getUniqueId());
                 if (!canDelete) {
                     p.sendMessage("§7无权撤回此物品");
+                    p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_NO, 1, 1);
                     return;
                 }
                 int clickedSlot = e.getSlot();
@@ -93,8 +95,10 @@ public class PlayerStoreListener implements Listener {
                         PlayerStoreMenu.removeViewingItem(p.getUniqueId());
                         p.closeInventory();
                         p.sendMessage("§7商品已清空，自动下架");
+                        p.playSound(p.getLocation(), Sound.BLOCK_BARREL_CLOSE, 1, 1);
                     } else {
                         p.sendMessage("§7已返还一件物品");
+                        p.playSound(p.getLocation(), Sound.BLOCK_BARREL_CLOSE, 1, 1);
                         PlayerStoreMenu.openPlayerItemView(p, item);
                     }
                     FileManager.saveData();

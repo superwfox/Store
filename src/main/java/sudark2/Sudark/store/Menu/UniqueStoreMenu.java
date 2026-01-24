@@ -2,6 +2,7 @@ package sudark2.Sudark.store.Menu;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -26,7 +27,6 @@ public class UniqueStoreMenu {
         for (UniqueStoreData.UniqueItem item : items) {
             if (slot >= 54)
                 break;
-
             ItemStack display = item.item.clone();
             ItemMeta meta = display.getItemMeta();
             List<String> lore = meta.hasLore() ? meta.getLore() : new ArrayList<>();

@@ -49,27 +49,43 @@ public class PlayerStoreListener implements Listener {
             }
         } else if (title.equals(PlayerStoreMenu.TITLE_ITEM_DETAIL)) {
             e.setCancelled(true);
+            PlayerStoreData.PlayerItem item = PlayerStoreMenu.getViewingItem(p.getUniqueId());
+            if (item == null)
+                return;
+
+            if (e.getClick() == ClickType.RIGHT) {
+                boolean canDelete = p.isOp() || item.playerId.equals(p.getUniqueId());
+                if (canDelete) {
+                    PlayerStoreData.removePlayerItem(item);
+                    FileManager.saveData();
+                    PlayerStoreMenu.removeViewingItem(p.getUniqueId());
+                    p.closeInventory();
+                    p.sendMessage("§7已删除商品");
+                    p.playSound(p.getLocation(), Sound.BLOCK_BARREL_CLOSE, 1, 1);
+                } else {
+                    p.sendMessage("§7无权删除此商品");
+                }
+                return;
+            }
+
             if (e.getSlot() == 53 && clicked.getType() == Material.GOLD_INGOT && e.getClick() == ClickType.LEFT) {
-                PlayerStoreData.PlayerItem item = PlayerStoreMenu.getViewingItem(p.getUniqueId());
-                if (item != null) {
-                    if (p.getLevel() >= item.price) {
-                        p.setLevel(p.getLevel() - item.price);
-                        for (ItemStack stack : item.items) {
-                            p.getInventory().addItem(stack.clone());
-                        }
-
-                        TransactionManager.recordTransaction(item.playerName, p.getName(), item.price, item.items);
-                        TransactionManager.addPayback(item.playerId, item.playerName, item.price);
-
-                        PlayerStoreData.removePlayerItem(item);
-                        FileManager.saveData();
-                        p.closeInventory();
-                        p.sendMessage("§7购买成功");
-                        p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-                    } else {
-                        p.sendMessage("§7经验等级不足");
-                        p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.5f);
+                if (p.getLevel() >= item.price) {
+                    p.setLevel(p.getLevel() - item.price);
+                    for (ItemStack stack : item.items) {
+                        p.getInventory().addItem(stack.clone());
                     }
+
+                    TransactionManager.recordTransaction(item.playerName, p.getName(), item.price, item.items);
+                    TransactionManager.addPayback(item.playerId, item.playerName, item.price);
+
+                    PlayerStoreData.removePlayerItem(item);
+                    FileManager.saveData();
+                    p.closeInventory();
+                    p.sendMessage("§7购买成功");
+                    p.playSound(p.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
+                } else {
+                    p.sendMessage("§7经验等级不足");
+                    p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.5f);
                 }
             }
         } else if (title.equals(PlayerStoreMenu.TITLE_SELL_INPUT)) {

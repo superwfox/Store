@@ -11,6 +11,7 @@ import org.bukkit.inventory.ItemStack;
 import sudark2.Sudark.store.Data.UniqueStoreData;
 import sudark2.Sudark.store.File.UniqueStoreManager;
 import sudark2.Sudark.store.Menu.UniqueStoreMenu;
+import sudark2.Sudark.store.Util.MethodUtil;
 
 import java.util.List;
 
@@ -49,24 +50,15 @@ public class UniqueStoreListener implements Listener {
                 String npcId = title.substring(UniqueStoreMenu.TITLE_PREFIX.length());
                 UniqueStoreMenu.openUniqueStore(p, npcKey, npcId);
             } else if (e.getClick() == ClickType.LEFT) {
-                if (p.getLevel() >= item.price) {
-                    p.setLevel(p.getLevel() - item.price);
-                    p.getInventory().addItem(item.item.clone());
-                    p.sendMessage("§7购买成功");
-                    p.playSound(p, Sound.ENTITY_VILLAGER_YES, 1, 1);
-                } else {
-                    p.sendMessage("§7经验等级不足");
-                    p.playSound(p, Sound.ENTITY_VILLAGER_NO, 1, 1);
-                }
+                MethodUtil.purchase(p, item.price, item.item);
             }
         }
     }
 
     @EventHandler
     public void onUniqueStoreClose(InventoryCloseEvent e) {
-        if (!(e.getPlayer() instanceof Player))
+        if (!(e.getPlayer() instanceof Player p))
             return;
-        Player p = (Player) e.getPlayer();
         String title = e.getView().getTitle();
 
         if (title.startsWith(UniqueStoreMenu.TITLE_PREFIX)) {

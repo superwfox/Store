@@ -2,6 +2,7 @@ package sudark2.Sudark.store.Menu;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -46,6 +47,10 @@ public class PlayerStoreMenu {
             lore.add("§f备注: " + item.info);
             meta.setLore(lore);
             display.setItemMeta(meta);
+
+            if (item.playerId.equals(p.getUniqueId())) {
+                display.addUnsafeEnchantment(Enchantment.SILK_TOUCH, 1);
+            }
 
             inv.setItem(slot++, display);
         }

@@ -10,6 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import sudark2.Sudark.store.Data.OfficialStoreData;
 import sudark2.Sudark.store.File.OfficialStoreManager;
 import sudark2.Sudark.store.Menu.OfficialStoreMenu;
+import sudark2.Sudark.store.Util.MethodUtil;
 
 import java.util.List;
 
@@ -44,15 +45,7 @@ public class OfficialStoreListener implements Listener {
                 p.playSound(p, Sound.BLOCK_BARREL_CLOSE, 1, 1);
                 OfficialStoreMenu.openOfficialStore(p);
             } else if (e.getClick() == ClickType.LEFT) {
-                if (p.getLevel() >= item.price) {
-                    p.setLevel(p.getLevel() - item.price);
-                    p.getInventory().addItem(item.item.clone());
-                    p.sendMessage("§7购买成功");
-                    p.playSound(p, Sound.ENTITY_VILLAGER_YES, 1, 1);
-                } else {
-                    p.sendMessage("§7经验等级不足");
-                    p.playSound(p, Sound.ENTITY_VILLAGER_NO, 1, 1);
-                }
+                MethodUtil.purchase(p, item.price, item.item);
             }
         }
     }

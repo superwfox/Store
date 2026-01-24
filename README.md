@@ -12,6 +12,9 @@
 - 商品直接展示实际物品（首个物品），显示卖家名称、价格、发布时间和备注
 - 点击商品查看详情，确认后扣除相应经验等级完成购买
 - 买家获得物品，卖家下次上线时收到经验补偿
+- **自己发布的商品带有精准采集附魔标识**
+- **主人或OP可右键下架商品并返还物品**
+- **详情页可右键撤回单个物品**
 
 ### 官方商店（全局）
 - 通过 `/store official` 或快捷菜单打开
@@ -31,7 +34,7 @@
 
 ### 交易系统
 - 使用玩家经验等级作为货币
-- 离线卖家的收益记录到 `payback.yml`，上线时自动发放
+- **在线卖家实时收到经验，离线卖家上线时自动发放**
 - 所有交易记录保存至 `Records.csv` 便于审计
 
 ---
@@ -40,54 +43,53 @@
 
 ```
 src/main/java/sudark2/Sudark/store/
-├── Store.java                    # 插件主类，注册命令和监听器
+├── Store.java                       # 插件主类，注册命令和监听器
 ├── Command/
-│   ├── StoreCommand.java         # 处理 /store 及其子命令
-│   └── StoreTabCompleter.java    # Tab补全
+│   ├── StoreCommand.java            # 处理 /store 及其子命令
+│   └── StoreTabCompleter.java       # Tab补全
 ├── Listener/
-│   ├── PlayerStoreListener.java  # 玩家商店GUI交互：出售/购买/详情/快捷菜单
-│   ├── OfficialStoreListener.java# 特殊商店GUI交互：购买/删除
-│   ├── GlobalStoreListener.java  # 官方商店GUI交互：购买/删除
-│   ├── EntityClickEvent.java     # 右键NPC触发商店
-│   └── PlayerJoinListener.java   # 玩家登录时发放离线收益
+│   ├── PlayerStoreListener.java     # 玩家商店GUI交互
+│   ├── OfficialStoreListener.java   # 官方商店GUI交互
+│   ├── UniqueStoreListener.java     # 特殊商店GUI交互
+│   ├── QuickMenuListener.java       # 快捷菜单交互 + F键触发
+│   ├── EntityClickEvent.java        # 右键NPC触发商店
+│   └── PlayerJoinListener.java      # 玩家登录时发放离线收益
 ├── Menu/
-│   ├── PlayerStoreMenu.java      # 构建玩家商店/详情/出售界面
-│   ├── OfficialStoreMenu.java    # 构建特殊商店界面
-│   ├── GlobalStoreMenu.java      # 构建官方商店界面
-│   ├── QuickMenu.java            # 构建快捷选择菜单
-│   └── SellManager.java          # 出售流程：等待价格输入→备注输入→存储
+│   ├── PlayerStoreMenu.java         # 构建玩家商店/详情/出售界面
+│   ├── OfficialStoreMenu.java       # 构建官方商店界面
+│   ├── UniqueStoreMenu.java         # 构建特殊商店界面
+│   └── QuickMenu.java               # 构建快捷选择菜单
 ├── Data/
-│   ├── PlayerStoreData.java      # 玩家商品内存缓存
-│   ├── OfficialStoreData.java    # 特殊商店内存缓存 + NPC映射
-│   └── GlobalStoreData.java      # 官方商店内存缓存
+│   ├── PlayerStoreData.java         # 玩家商品内存缓存
+│   ├── OfficialStoreData.java       # 官方商店内存缓存
+│   └── UniqueStoreData.java         # 特殊商店内存缓存 + NPC映射
 ├── File/
-│   ├── FileManager.java          # 玩家商品的加载/保存
-│   ├── OfficialStoreManager.java # 特殊商店的加载/保存
-│   ├── GlobalStoreManager.java   # 官方商店的加载/保存
-│   └── TransactionManager.java   # 交易记录与离线收益
+│   ├── FileManager.java             # 协调各Manager初始化和加载
+│   ├── PlayerStoreManager.java      # 玩家商品的加载/保存
+│   ├── OfficialStoreManager.java    # 官方商店的加载/保存
+│   ├── UniqueStoreManager.java      # 特殊商店的加载/保存
+│   ├── TransactionManager.java      # 交易记录与离线收益
+│   └── SellManager.java             # 出售流程管理
 ├── Inventory/
-│   └── ChatInput.java            # 聊天输入监听（价格/备注）
+│   └── ChatInput.java               # 聊天输入监听（价格/备注）
 ├── NPC/
-│   └── InitNPC.java              # 创建NPC并注册映射
+│   └── InitNPC.java                 # 创建NPC并注册映射
 └── Util/
-    └── MethodUtil.java           # 坐标编码/寻找最近NPC
+    └── MethodUtil.java              # 工具方法：物品发放、购买处理、坐标编码
 ```
 
 ### 数据文件
 
 ```
 plugins/Store/
-├── data.yml              # 玩家商品元数据（卖家、价格、时间、物品文件名）
+├── data.yml              # 玩家商品元数据
 ├── npcList.yml           # NPC映射：商店ID → world_x_y_z
 ├── OfficialData.yml      # 官方商店商品元数据
 ├── payback.yml           # 离线卖家待发放经验
 ├── Records.csv           # 交易日志
 ├── items/                # 玩家商品序列化文件
-│   └── player_<uuid>_<timestamp>.dat
 ├── officialStores/       # 特殊商店商品序列化文件
-│   └── <world_x_y_z>.dat
 └── OfficialItems/        # 官方商店商品序列化文件
-    └── <index>.dat
 ```
 
 ---
@@ -117,40 +119,25 @@ plugins/Store/
 2. 点击右下角 **金锭** 确认购买
 3. 经验等级足够则购买成功，物品存入背包
 
+**下架/撤回**：
+- 列表页右键自己的商品 → 下架整个商品，物品返还
+- 详情页右键单个物品 → 撤回该物品，商品为空则自动下架
+
 ### 管理员命令（需OP）
 
 | 命令 | 说明 |
 |------|------|
-| `/store create <ID>` | 在当前位置创建名为ID的特殊商店NPC |
+| `/store create <ID>` | 在当前位置创建特殊商店NPC |
 | `/store add <价格> [备注]` | 将手持物品添加到最近的NPC特殊商店 |
 | `/store update <价格> [备注]` | 将手持物品添加到官方商店 |
 | `/store check <ID>` | 打开指定ID的特殊商店 |
 | `/store destroy <ID>` | 删除指定特殊商店及其数据 |
 | `/store reload` | 重载插件数据并重建所有NPC |
 
-**创建特殊商店示例**：
-```
-# 站在目标位置执行
-/store create 武器店
-
-# 手持钻石剑
-/store add 50 锋利V附魔
-```
-
-**添加官方商店商品**：
-```
-# 手持物品执行
-/store update 100 限定商品
-```
-
-**删除商品**：  
-OP在官方商店或特殊商店界面中 **右键** 商品即可删除。
-
 ### 依赖
 
 - Spigot/Paper 1.20.1+
 - [Citizens](https://www.spigotmc.org/resources/citizens.13811/) 插件（用于NPC创建）
-
 
 ---
 

@@ -4,9 +4,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
-import sudark2.Sudark.store.Menu.SellManager;
+import sudark2.Sudark.store.File.SellManager;
 
-import java.util.Set;
 import java.util.UUID;
 
 public class ChatInput implements Listener {

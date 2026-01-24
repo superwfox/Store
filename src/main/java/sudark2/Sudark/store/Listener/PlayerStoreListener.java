@@ -44,7 +44,28 @@ public class PlayerStoreListener implements Listener {
             } else if (slot > 0 && slot < 54) {
                 List<PlayerStoreData.PlayerItem> items = PlayerStoreData.getPlayerItems();
                 if (slot <= items.size()) {
-                    PlayerStoreMenu.openPlayerItemView(p, items.get(slot - 1));
+                    PlayerStoreData.PlayerItem item = items.get(slot - 1);
+                    if (e.getClick() == ClickType.RIGHT) {
+                        boolean canDelete = p.isOp() || item.playerId.equals(p.getUniqueId());
+                        if (canDelete) {
+                            for (ItemStack stack : item.items) {
+                                if (p.getInventory().firstEmpty() == -1) {
+                                    p.getWorld().dropItem(p.getLocation(), stack.clone());
+                                } else {
+                                    p.getInventory().addItem(stack.clone());
+                                }
+                            }
+                            PlayerStoreData.removePlayerItem(item);
+                            FileManager.saveData();
+                            p.sendMessage("§7已下架商品 物品已返还");
+                            p.playSound(p.getLocation(), Sound.BLOCK_BARREL_CLOSE, 1, 1);
+                            PlayerStoreMenu.openPlayerStore(p);
+                        } else {
+                            p.sendMessage("§7无权下架此商品");
+                        }
+                    } else {
+                        PlayerStoreMenu.openPlayerItemView(p, item);
+                    }
                 }
             }
         } else if (title.equals(PlayerStoreMenu.TITLE_ITEM_DETAIL)) {
@@ -53,17 +74,31 @@ public class PlayerStoreListener implements Listener {
             if (item == null)
                 return;
 
-            if (e.getClick() == ClickType.RIGHT) {
+            if (e.getClick() == ClickType.RIGHT && e.getSlot() < 53) {
                 boolean canDelete = p.isOp() || item.playerId.equals(p.getUniqueId());
-                if (canDelete) {
-                    PlayerStoreData.removePlayerItem(item);
+                if (!canDelete) {
+                    p.sendMessage("§7无权撤回此物品");
+                    return;
+                }
+                int clickedSlot = e.getSlot();
+                if (clickedSlot >= 0 && clickedSlot < item.items.size()) {
+                    ItemStack removed = item.items.remove(clickedSlot);
+                    if (p.getInventory().firstEmpty() == -1) {
+                        p.getWorld().dropItem(p.getLocation(), removed.clone());
+                    } else {
+                        p.getInventory().addItem(removed.clone());
+                    }
+                    if (item.items.isEmpty()) {
+                        PlayerStoreData.removePlayerItem(item);
+                        PlayerStoreMenu.removeViewingItem(p.getUniqueId());
+                        p.closeInventory();
+                        p.sendMessage("§7商品已清空，自动下架");
+                    } else {
+                        p.sendMessage("§7已返还一件物品");
+                        PlayerStoreMenu.openPlayerItemView(p, item);
+                    }
                     FileManager.saveData();
-                    PlayerStoreMenu.removeViewingItem(p.getUniqueId());
-                    p.closeInventory();
-                    p.sendMessage("§7已删除商品");
                     p.playSound(p.getLocation(), Sound.BLOCK_BARREL_CLOSE, 1, 1);
-                } else {
-                    p.sendMessage("§7无权删除此商品");
                 }
                 return;
             }

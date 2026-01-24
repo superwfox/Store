@@ -19,7 +19,6 @@ public class SellManager {
     private static final Map<UUID, Integer> pendingPrice = new HashMap<>();
     private static final Set<UUID> waitingForPrice = new HashSet<>();
     private static final Set<UUID> waitingForInfo = new HashSet<>();
-    private static final Map<UUID, Long> inputTimeout = new HashMap<>();
     private static final DateTimeFormatter timeFormat = DateTimeFormatter.ofPattern("MM-dd-HH:mm");
 
     public static void handleSellClose(Player p, Inventory inv) {
@@ -35,8 +34,6 @@ public class SellManager {
 
         UUID uuid = p.getUniqueId();
         pendingSell.put(uuid, items);
-        long timeout = System.currentTimeMillis() + 180000;
-        inputTimeout.put(uuid, timeout);
         waitingForPrice.add(uuid);
 
         p.sendMessage("请在§e聊天栏§f输入价格§7[整数]");
@@ -46,7 +43,6 @@ public class SellManager {
                 waitingForPrice.remove(uuid);
                 waitingForInfo.remove(uuid);
                 pendingPrice.remove(uuid);
-                inputTimeout.remove(uuid);
                 p.sendMessage("§7输入超时 物品已返还");
                 List<ItemStack> stacks = pendingSell.remove(uuid);
                 MethodUtil.giveItems(p, stacks);
@@ -74,7 +70,6 @@ public class SellManager {
         UUID uuid = p.getUniqueId();
         List<ItemStack> items = pendingSell.remove(uuid);
         Integer price = pendingPrice.remove(uuid);
-        inputTimeout.remove(uuid);
         waitingForInfo.remove(uuid);
 
         if (items == null || price == null) {

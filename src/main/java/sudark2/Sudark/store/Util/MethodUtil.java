@@ -39,11 +39,24 @@ public class MethodUtil {
     public static String getLocCode(Location loc) {
         int x = loc.getBlockX();
         int z = loc.getBlockZ();
-        int y = Objects.requireNonNull(loc.getWorld()).getHighestBlockYAt(x, z) + 1;
+        int y = getBestBlockY(loc);
         return loc.getWorld().getName() + "_" +
                 x + "_" +
                 y + "_" +
                 z;
+    }
+
+    public static int getBestBlockY(Location loc) {
+        int temY = loc.getBlockY();
+        short tried = 0;
+        while (!loc.getBlock().getType().isSolid()) {
+            if (tried < 100)
+                loc.add(0, -1, 0);
+            else
+                loc.add(0, 1, 0);
+            tried++;
+        }
+        return loc.getBlockY() + 1;
     }
 
     public static boolean isLocValid(Player pl) {

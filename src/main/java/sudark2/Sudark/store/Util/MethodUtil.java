@@ -46,15 +46,17 @@ public class MethodUtil {
                 z;
     }
 
-    public static int getBestBlockY(Location loc) {
+    public static int getBestBlockY(Location locOri) {
+        Location loc = locOri.clone();
         int temY = loc.getBlockY();
-        short tried = 0;
+        byte tried = -100;
         while (!loc.getBlock().getType().isSolid()) {
-            if (tried < 100)
+            if (tried < 0)
                 loc.add(0, -1, 0);
             else
                 loc.add(0, 1, 0);
             tried++;
+            if (tried == 100) return temY;
         }
         return loc.getBlockY() + 1;
     }

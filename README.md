@@ -1,7 +1,7 @@
 # Store - 经验等级商店插件
 
 基于 Spigot 1.20.1 的服务器商店系统，使用玩家经验等级作为交易货币。
-- 支持玩家自由上架物品、全局官方商店和NPC特殊商店。
+- 支持玩家自由上架物品、全局官方商店、NPC特殊商店和物品回收。
 - 完全适配 Mohist 1.20.1 。
 
 ## 主要功能
@@ -30,7 +30,13 @@
 
 ### 快捷菜单
 - 在 `world` 世界中蹲下并按 `F` 键（交换手持物品键）打开快捷菜单
-- 点击金锭打开玩家商店，点击合金锭打开官方商店
+- 点击金锭打开玩家商店，点击合金锭打开官方商店，点击木桶打开回收商店
+
+### 回收商店
+- 通过 `/store recycle` 或快捷菜单中的木桶打开
+- 管理员使用 `/store cycle <经验等级>` 将手持物品设为可回收物品（物品数量作为兑换单位）
+- 放入物品后关闭界面，匹配的物品被回收并给予对应经验等级
+- 数量不足兑换单位的物品返还，不可回收的物品也会返还
 
 ### 交易系统
 - 使用玩家经验等级作为货币
@@ -51,6 +57,7 @@ src/main/java/sudark2/Sudark/store/
 │   ├── PlayerStoreListener.java     # 玩家商店GUI交互
 │   ├── OfficialStoreListener.java   # 官方商店GUI交互
 │   ├── UniqueStoreListener.java     # 特殊商店GUI交互
+│   ├── RecycleStoreListener.java    # 回收商店逻辑
 │   ├── QuickMenuListener.java       # 快捷菜单交互 + F键触发
 │   ├── EntityClickEvent.java        # 右键NPC触发商店
 │   └── PlayerJoinListener.java      # 玩家登录时发放离线收益
@@ -58,16 +65,19 @@ src/main/java/sudark2/Sudark/store/
 │   ├── PlayerStoreMenu.java         # 构建玩家商店/详情/出售界面
 │   ├── OfficialStoreMenu.java       # 构建官方商店界面
 │   ├── UniqueStoreMenu.java         # 构建特殊商店界面
+│   ├── RecycleStoreMenu.java        # 构建回收商店界面
 │   └── QuickMenu.java               # 构建快捷选择菜单
 ├── Data/
 │   ├── PlayerStoreData.java         # 玩家商品内存缓存
 │   ├── OfficialStoreData.java       # 官方商店内存缓存
-│   └── UniqueStoreData.java         # 特殊商店内存缓存 + NPC映射
+│   ├── UniqueStoreData.java         # 特殊商店内存缓存 + NPC映射
+│   └── RecycleStoreData.java        # 回收物品内存缓存 + HashMap匹配
 ├── File/
 │   ├── FileManager.java             # 协调各Manager初始化和加载
 │   ├── PlayerStoreManager.java      # 玩家商品的加载/保存
 │   ├── OfficialStoreManager.java    # 官方商店的加载/保存
 │   ├── UniqueStoreManager.java      # 特殊商店的加载/保存
+│   ├── RecycleStoreManager.java     # 回收物品的加载/保存
 │   ├── TransactionManager.java      # 交易记录与离线收益
 │   └── SellManager.java             # 出售流程管理
 ├── Inventory/
@@ -89,7 +99,9 @@ plugins/Store/
 ├── Records.csv           # 交易日志
 ├── items/                # 玩家商品序列化文件
 ├── officialStores/       # 特殊商店商品序列化文件
-└── OfficialItems/        # 官方商店商品序列化文件
+├── OfficialItems/        # 官方商店商品序列化文件
+├── RecycleData.yml       # 回收物品元数据
+└── RecycleItems/         # 回收物品序列化文件
 ```
 
 ---
@@ -103,6 +115,7 @@ plugins/Store/
 | `/store` | 打开玩家商店 |
 | `/store player` | 同上 |
 | `/store official` | 打开官方商店 |
+| `/store recycle` | 打开回收商店 |
 
 **快捷打开**：在 `world` 世界中蹲下按 `F` 键打开选择菜单
 
@@ -132,6 +145,7 @@ plugins/Store/
 | `/store update <价格> [备注]` | 将手持物品添加到官方商店 |
 | `/store check <ID>` | 打开指定ID的特殊商店 |
 | `/store destroy <ID>` | 删除指定特殊商店及其数据 |
+| `/store cycle <经验等级>` | 将手持物品设为可回收物品（数量为兑换单位） |
 | `/store reload` | 重载插件数据并重建所有NPC |
 
 ### 依赖

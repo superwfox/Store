@@ -6,11 +6,14 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import sudark2.Sudark.store.Data.OfficialStoreData;
+import sudark2.Sudark.store.Data.RecycleStoreData;
 import sudark2.Sudark.store.Data.UniqueStoreData;
 import sudark2.Sudark.store.File.FileManager;
 import sudark2.Sudark.store.File.OfficialStoreManager;
+import sudark2.Sudark.store.File.RecycleStoreManager;
 import sudark2.Sudark.store.File.UniqueStoreManager;
 import sudark2.Sudark.store.Menu.OfficialStoreMenu;
+import sudark2.Sudark.store.Menu.RecycleStoreMenu;
 import sudark2.Sudark.store.Menu.UniqueStoreMenu;
 import sudark2.Sudark.store.Menu.PlayerStoreMenu;
 import sudark2.Sudark.store.NPC.InitNPC;
@@ -51,11 +54,42 @@ public class StoreCommand implements CommandExecutor {
                 break;
 
             case "player":
-                if (isLocValid(p)) PlayerStoreMenu.openPlayerStore(p);
+                if (isLocValid(p))
+                    PlayerStoreMenu.openPlayerStore(p);
                 break;
 
             case "official":
-                if (isLocValid(p)) OfficialStoreMenu.openOfficialStore(p);
+                if (isLocValid(p))
+                    OfficialStoreMenu.openOfficialStore(p);
+                break;
+
+            case "recycle":
+                if (isLocValid(p))
+                    RecycleStoreMenu.open(p);
+                break;
+
+            case "cycle":
+                if (!p.isOp()) {
+                    p.sendMessage("§7无权限");
+                    return true;
+                }
+                if (args.length < 2) {
+                    p.sendMessage("§7用法: /store cycle <经验等级>");
+                    return true;
+                }
+                ItemStack cycleHand = p.getInventory().getItemInMainHand();
+                if (cycleHand.getType() == org.bukkit.Material.AIR) {
+                    p.sendMessage("§7请手持物品");
+                    return true;
+                }
+                try {
+                    int expLevel = Integer.parseInt(args[1]);
+                    RecycleStoreData.addItem(cycleHand.clone(), expLevel);
+                    RecycleStoreManager.saveAll();
+                    p.sendMessage("§7已添加可回收物品: §e" + cycleHand.getAmount() + "x §f-> §b" + expLevel + " §f经验等级");
+                } catch (NumberFormatException e) {
+                    p.sendMessage("§7经验等级必须为整数");
+                }
                 break;
 
             case "check":

@@ -33,7 +33,16 @@ public class QuickMenu {
         netheriteMeta.setLore(netheriteLore);
         netherite.setItemMeta(netheriteMeta);
 
+        ItemStack barrel = new ItemStack(Material.BARREL);
+        ItemMeta barrelMeta = barrel.getItemMeta();
+        barrelMeta.setDisplayName("§e回收商店");
+        List<String> barrelLore = new ArrayList<>();
+        barrelLore.add("§7点击打开回收商店");
+        barrelMeta.setLore(barrelLore);
+        barrel.setItemMeta(barrelMeta);
+
         inv.setItem(11, gold);
+        inv.setItem(13, barrel);
         inv.setItem(15, netherite);
 
         p.openInventory(inv);

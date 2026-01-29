@@ -15,9 +15,9 @@ public class StoreTabCompleter implements TabCompleter {
         List<String> completions = new ArrayList<>();
 
         if (args.length == 1) {
-            List<String> options = new ArrayList<>(List.of("player", "official"));
+            List<String> options = new ArrayList<>(List.of("player", "official", "recycle"));
             if (sender.isOp()) {
-                options.addAll(List.of("add", "check", "create", "reload", "destroy", "update"));
+                options.addAll(List.of("add", "check", "create", "reload", "destroy", "update", "cycle"));
             }
 
             String input = args[0].toLowerCase();
@@ -37,6 +37,8 @@ public class StoreTabCompleter implements TabCompleter {
                 completions.addAll(UniqueStoreData.getNPCMapping().keySet());
             } else if (args[0].equalsIgnoreCase("destroy") && sender.isOp()) {
                 completions.addAll(UniqueStoreData.getNPCMapping().keySet());
+            } else if (args[0].equalsIgnoreCase("cycle") && sender.isOp()) {
+                completions.add("<经验等级>");
             }
         } else if (args.length == 3) {
             if (args[0].equalsIgnoreCase("add") && sender.isOp()) {

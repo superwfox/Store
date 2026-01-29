@@ -23,6 +23,7 @@ public final class Store extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new OfficialStoreListener(), this);
         getServer().getPluginManager().registerEvents(new UniqueStoreListener(), this);
         getServer().getPluginManager().registerEvents(new QuickMenuListener(), this);
+        getServer().getPluginManager().registerEvents(new RecycleStoreListener(), this);
         getServer().getPluginManager().registerEvents(new ChatInput(), this);
         getServer().getPluginManager().registerEvents(new EntityClickEvent(), this);
         getServer().getPluginManager().registerEvents(new PlayerJoinListener(), this);

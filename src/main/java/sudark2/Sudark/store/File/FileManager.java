@@ -19,6 +19,7 @@ public class FileManager {
         PlayerStoreManager.init(dataFolder);
         UniqueStoreManager.init(dataFolder);
         OfficialStoreManager.init(dataFolder);
+        RecycleStoreManager.init(dataFolder);
         TransactionManager.init(dataFolder);
     }
 
@@ -26,6 +27,7 @@ public class FileManager {
         PlayerStoreManager.loadAll();
         UniqueStoreManager.loadAll();
         OfficialStoreManager.loadAll();
+        RecycleStoreManager.loadAll();
     }
 
     public static void loadNPCs() {

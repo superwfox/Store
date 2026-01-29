@@ -10,6 +10,7 @@ import org.bukkit.inventory.ItemStack;
 import sudark2.Sudark.store.Menu.OfficialStoreMenu;
 import sudark2.Sudark.store.Menu.PlayerStoreMenu;
 import sudark2.Sudark.store.Menu.QuickMenu;
+import sudark2.Sudark.store.Menu.RecycleStoreMenu;
 
 import static sudark2.Sudark.store.Util.MethodUtil.isLocValid;
 
@@ -32,6 +33,8 @@ public class QuickMenuListener implements Listener {
         int slot = e.getSlot();
         if (slot == 11 && clicked.getType() == Material.GOLD_INGOT) {
             PlayerStoreMenu.openPlayerStore(p);
+        } else if (slot == 13 && clicked.getType() == Material.BARREL) {
+            RecycleStoreMenu.open(p);
         } else if (slot == 15 && clicked.getType() == Material.NETHERITE_INGOT) {
             OfficialStoreMenu.openOfficialStore(p);
         }

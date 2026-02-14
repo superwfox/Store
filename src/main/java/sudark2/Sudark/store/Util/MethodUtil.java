@@ -6,34 +6,38 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
+import sudark2.Sudark.store.NPC.NPCManager;
 
-import java.util.Comparator;
 import java.util.List;
-
 import java.util.Optional;
 
 public class MethodUtil {
 
     public static Optional<String> findNearestNPC(Player player, double maxDistance) {
-        Optional<Entity> npc = player.getNearbyEntities(maxDistance, maxDistance, maxDistance).stream()
-                .filter(entity -> entity instanceof Player pl && !Bukkit.getOnlinePlayers().contains(pl))
-                .min(Comparator.comparingDouble(entity -> entity.getLocation().distance(player.getLocation())));
+        var npcEntities = NPCManager.getNpcEntities();
+        String nearestKey = null;
+        double nearestDist = maxDistance;
 
-        if (npc.isPresent()) {
-            Entity entity = npc.get();
-            if (entity instanceof Player npcPlayer) {
-                npcPlayer.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 100, 0, false, false));
+        for (var entry : npcEntities.entrySet()) {
+            Entity bukkit = entry.getValue().getBukkitEntity();
+            if (!bukkit.getWorld().equals(player.getWorld())) continue;
+            double dist = bukkit.getLocation().distance(player.getLocation());
+            if (dist < nearestDist) {
+                nearestDist = dist;
+                nearestKey = entry.getKey();
             }
-            return Optional.of(getNPCKey(entity));
+        }
+
+        if (nearestKey != null) {
+            NPCManager.setGlowing(nearestKey, true);
+            String finalNearestKey = nearestKey;
+            Bukkit.getScheduler().runTaskLater(
+                    sudark2.Sudark.store.Store.getInstance(), () ->
+                            NPCManager.setGlowing(finalNearestKey, false), 100L);
+            return Optional.of(nearestKey);
         }
 
         return Optional.empty();
-    }
-
-    public static String getNPCKey(Entity npc) {
-        return getLocCode(npc.getLocation());
     }
 
     public static String getLocCode(Location loc) {

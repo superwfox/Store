@@ -10,6 +10,7 @@ public class UniqueStoreData {
 
     private static final ConcurrentHashMap<String, List<UniqueItem>> stores = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, String> npcMapping = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, String[]> skinMapping = new ConcurrentHashMap<>();
 
     public static class UniqueItem {
         public ItemStack item;
@@ -69,5 +70,22 @@ public class UniqueStoreData {
     public static void clearAll() {
         stores.clear();
         npcMapping.clear();
+        skinMapping.clear();
+    }
+
+    public static void setSkin(String npcKey, String value, String signature) {
+        skinMapping.put(npcKey, new String[]{value, signature});
+    }
+
+    public static String[] getSkin(String npcKey) {
+        return skinMapping.get(npcKey);
+    }
+
+    public static void removeSkin(String npcKey) {
+        skinMapping.remove(npcKey);
+    }
+
+    public static ConcurrentHashMap<String, String[]> getSkinMapping() {
+        return skinMapping;
     }
 }

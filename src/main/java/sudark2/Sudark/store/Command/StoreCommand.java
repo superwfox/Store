@@ -17,12 +17,11 @@ import sudark2.Sudark.store.Menu.RecycleStoreMenu;
 import sudark2.Sudark.store.Menu.UniqueStoreMenu;
 import sudark2.Sudark.store.Menu.PlayerStoreMenu;
 import sudark2.Sudark.store.NPC.InitNPC;
+import sudark2.Sudark.store.NPC.NPCManager;
+import sudark2.Sudark.store.NPC.SkinFetcher;
 import sudark2.Sudark.store.Util.MethodUtil;
 
 import java.util.Optional;
-
-import static sudark2.Sudark.store.File.FileManager.loadNPCs;
-import static sudark2.Sudark.store.Util.MethodUtil.isLocValid;
 
 public class StoreCommand implements CommandExecutor {
 
@@ -54,17 +53,17 @@ public class StoreCommand implements CommandExecutor {
                 break;
 
             case "player":
-                if (isLocValid(p))
+                if (MethodUtil.isLocValid(p))
                     PlayerStoreMenu.openPlayerStore(p);
                 break;
 
             case "official":
-                if (isLocValid(p))
+                if (MethodUtil.isLocValid(p))
                     OfficialStoreMenu.openOfficialStore(p);
                 break;
 
             case "recycle":
-                if (isLocValid(p))
+                if (MethodUtil.isLocValid(p))
                     RecycleStoreMenu.open(p);
                 break;
 
@@ -189,12 +188,30 @@ public class StoreCommand implements CommandExecutor {
                     p.sendMessage("§7无权限");
                     return true;
                 }
+                NPCManager.removeAll();
                 UniqueStoreData.clearAll();
                 FileManager.loadData();
-
-                org.bukkit.Bukkit.dispatchCommand(org.bukkit.Bukkit.getConsoleSender(), "npc remove all");
-                loadNPCs();
+                FileManager.loadNPCs();
                 p.sendMessage("§e已重载插件并重置所有NPC");
+                break;
+
+            case "setskin":
+                if (!p.isOp()) {
+                    p.sendMessage("§7无权限");
+                    return true;
+                }
+                if (args.length < 2) {
+                    p.sendMessage("§7用法: /store setskin <正版玩家ID>");
+                    return true;
+                }
+                Optional<String> skinTarget = MethodUtil.findNearestNPC(p, 50);
+                if (skinTarget.isEmpty()) {
+                    p.sendMessage("§7附近没有商店NPC");
+                    return true;
+                }
+                String skinKey = skinTarget.get();
+                p.sendMessage("§7正在获取皮肤...");
+                SkinFetcher.fetchAndApply(p, args[1], skinKey);
                 break;
 
             case "destroy":
@@ -213,9 +230,10 @@ public class StoreCommand implements CommandExecutor {
                     return true;
                 }
 
-                org.bukkit.Bukkit.dispatchCommand(org.bukkit.Bukkit.getConsoleSender(), "npc remove " + destroyId);
+                NPCManager.remove(destroyKey);
                 UniqueStoreData.removeNPC(destroyId);
                 UniqueStoreData.removeStore(destroyKey);
+                UniqueStoreData.removeSkin(destroyKey);
                 UniqueStoreManager.deleteStore(destroyKey);
                 UniqueStoreManager.saveAll();
                 p.sendMessage("§e已销毁商店: " + destroyId);

@@ -39,21 +39,38 @@ public class UniqueStoreManager {
     }
 
     private static void loadNPCMapping() {
-        if (!npcListFile.exists())
-            return;
-
+        if (!npcListFile.exists()) return;
         YamlConfiguration config = YamlConfiguration.loadConfiguration(npcListFile);
-        for (String npcId : config.getKeys(false)) {
-            String npcKey = config.getString(npcId);
-            UniqueStoreData.registerNPC(npcId, npcKey);
+
+        if (config.isConfigurationSection("npcs")) {
+            var section = config.getConfigurationSection("npcs");
+            for (String npcId : section.getKeys(false)) {
+                UniqueStoreData.registerNPC(npcId, section.getString(npcId));
+            }
+        }
+
+        if (config.isConfigurationSection("skins")) {
+            var section = config.getConfigurationSection("skins");
+            for (String npcKey : section.getKeys(false)) {
+                String value = section.getString(npcKey + ".value");
+                String sig = section.getString(npcKey + ".signature");
+                if (value != null && sig != null) {
+                    UniqueStoreData.setSkin(npcKey, value, sig);
+                }
+            }
         }
     }
 
     private static void saveNPCMapping() {
         YamlConfiguration config = new YamlConfiguration();
 
-        for (Map.Entry<String, String> entry : UniqueStoreData.getNPCMapping().entrySet()) {
-            config.set(entry.getKey(), entry.getValue());
+        for (var entry : UniqueStoreData.getNPCMapping().entrySet()) {
+            config.set("npcs." + entry.getKey(), entry.getValue());
+        }
+
+        for (var entry : UniqueStoreData.getSkinMapping().entrySet()) {
+            config.set("skins." + entry.getKey() + ".value", entry.getValue()[0]);
+            config.set("skins." + entry.getKey() + ".signature", entry.getValue()[1]);
         }
 
         try {

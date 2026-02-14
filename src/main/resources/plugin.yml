@@ -6,8 +6,3 @@ commands:
   store:
     description: Store management
     usage: /store [player|official|create|add]
-permissions:
-  store.admin:
-    description: Admin permissions
-    default: op
-

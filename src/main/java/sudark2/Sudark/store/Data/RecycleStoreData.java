@@ -58,7 +58,4 @@ public class RecycleStoreData {
         recycleMap.clear();
     }
 
-    public static void removeByKey(String key) {
-        recycleMap.remove(key);
-    }
 }

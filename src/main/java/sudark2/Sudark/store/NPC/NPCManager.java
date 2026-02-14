@@ -141,10 +141,6 @@ public class NPCManager {
         return entityIdToKey.get(entityId);
     }
 
-    public static boolean isNPC(int entityId) {
-        return entityIdToKey.containsKey(entityId);
-    }
-
     public static void showToPlayer(Player p) {
         ServerGamePacketListenerImpl conn = getConn(p);
         if (conn == null) return;

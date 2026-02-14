@@ -1,165 +1,127 @@
 # Store - 经验等级商店插件
 
-基于 Spigot 1.20.1 的服务器商店系统，使用玩家经验等级作为交易货币。
-- 支持玩家自由上架物品、全局官方商店、NPC特殊商店和物品回收。
-- 完全适配 Mohist 1.20.1 。
+Mohist 1.20.1 服务器商店系统，使用玩家经验等级作为交易货币。支持玩家自由上架、官方商店、NPC特殊商店、物品回收四种商店形态。
+
+## NPC 系统
+
+不依赖任何第三方NPC插件，直接通过 NMS `ServerPlayer` 实现假人NPC：
+
+- 通过反射注入 `EmbeddedChannel` + 假 `Connection` + `ServerGamePacketListenerImpl`，使 `ServerPlayer` 脱离真实网络连接独立存在
+- NPC 作为真实实体加入世界（`addFreshEntity`），支持原生 `PlayerInteractAtEntityEvent` 交互，无需额外碰撞检测
+- 皮肤通过 Mojang API 异步获取，写入 `GameProfile` 的 textures 属性，反射设置 `DATA_PLAYER_MODE_CUSTOMISATION`（`f_36089_`）为 `0x7F` 启用全部7层皮肤
+- 发光效果通过反射操作 `DATA_SHARED_FLAGS_ID`（`f_19805_`）的 `0x40` 位，手动广播 `ClientboundSetEntityDataPacket` 实现
+- 朝向追踪：5tick 间隔的调度任务，计算最近玩家方位角，通过 `ClientboundRotateHeadPacket` + `ClientboundMoveEntityPacket.Rot` 广播
+- 所有 SRG 混淆方法名适配 Mohist 1.20.1 的 `mohistdev` 映射
 
 ## 主要功能
 
 ### 玩家商店
-- 任意玩家可通过 `/store` 打开商店界面
-- 点击向日葵图标进入出售流程，将物品放入界面后关闭，按提示输入价格和备注
-- 商品直接展示实际物品（首个物品），显示卖家名称、价格、发布时间和备注
-- 点击商品查看详情，确认后扣除相应经验等级完成购买
-- 买家获得物品，卖家下次上线时收到经验补偿
-- **自己发布的商品带有精准采集附魔标识**
-- **主人或OP可右键下架商品并返还物品**
-- **详情页可右键撤回单个物品**
+- `/store` 打开商店，点击末地传送门框架进入出售流程
+- 放入物品 → 关闭界面 → 聊天输入价格和备注 → 上架（3分钟超时自动返还）
+- 自己的商品带精准采集附魔标识，主人或OP可右键下架，详情页可右键撤回单个物品
+- 买家购买后卖家实时收到经验，离线卖家上线时自动补发
 
-### 官方商店（全局）
-- 通过 `/store official` 或快捷菜单打开
-- 管理员使用 `/store update <价格> [备注]` 将手持物品添加到官方商店
-- 左键购买商品，OP可右键删除商品
-- 最大容量54格
+### 官方商店
+- `/store official` 或快捷菜单打开
+- `/store update <价格> [备注]` 添加商品，左键购买，OP右键删除
 
 ### 特殊商店（NPC绑定）
-- 管理员使用 `/store create <ID>` 在当前位置创建NPC商店
-- 使用 `/store add <价格> [备注]` 将手持物品添加到最近的NPC商店
-- 右键点击NPC打开商店界面，使用 `/store check <ID>` 通过命令打开
-- OP可右键删除商品
+- `/store create <ID>` 在当前位置生成NPC商店
+- `/store add <价格> [备注]` 添加商品到最近NPC（50格内，添加时NPC发光提示）
+- `/store setskin <正版玩家ID>` 设置最近NPC的皮肤
+- 右键NPC或 `/store check <ID>` 打开商店
 
 ### 快捷菜单
-- 在 `world` 世界中蹲下并按 `F` 键（交换手持物品键）打开快捷菜单
-- 点击金锭打开玩家商店，点击合金锭打开官方商店，点击木桶打开回收商店
+- 在 `world` 世界蹲下按 `F` 键打开，可快速进入三种商店
 
 ### 回收商店
-- 通过 `/store recycle` 或快捷菜单中的木桶打开
-- 管理员使用 `/store cycle <经验等级>` 将手持物品设为可回收物品（物品数量作为兑换单位）
-- 放入物品后关闭界面，匹配的物品被回收并给予对应经验等级
-- 数量不足兑换单位的物品返还，不可回收的物品也会返还
+- `/store recycle` 或快捷菜单打开
+- `/store cycle <经验等级>` 设置可回收物品（物品数量为兑换单位）
+- 放入物品关闭界面自动回收，不足或不匹配的物品返还
 
-### 交易系统
-- 使用玩家经验等级作为货币
-- **在线卖家实时收到经验，离线卖家上线时自动发放**
-- 所有交易记录保存至 `Records.csv` 便于审计
-
----
-
-## 项目结构
+## 项目结构与性能分析
 
 ```
-src/main/java/sudark2/Sudark/store/
-├── Store.java                       # 插件主类，注册命令和监听器
+store/
+├── Store.java                  # 插件入口，事件驱动注册
 ├── Command/
-│   ├── StoreCommand.java            # 处理 /store 及其子命令
-│   └── StoreTabCompleter.java       # Tab补全
-├── Listener/
-│   ├── PlayerStoreListener.java     # 玩家商店GUI交互
-│   ├── OfficialStoreListener.java   # 官方商店GUI交互
-│   ├── UniqueStoreListener.java     # 特殊商店GUI交互
-│   ├── RecycleStoreListener.java    # 回收商店逻辑
-│   ├── QuickMenuListener.java       # 快捷菜单交互 + F键触发
-│   ├── EntityClickEvent.java        # 右键NPC触发商店
-│   └── PlayerJoinListener.java      # 玩家登录时发放离线收益
-├── Menu/
-│   ├── PlayerStoreMenu.java         # 构建玩家商店/详情/出售界面
-│   ├── OfficialStoreMenu.java       # 构建官方商店界面
-│   ├── UniqueStoreMenu.java         # 构建特殊商店界面
-│   ├── RecycleStoreMenu.java        # 构建回收商店界面
-│   └── QuickMenu.java               # 构建快捷选择菜单
-├── Data/
-│   ├── PlayerStoreData.java         # 玩家商品内存缓存
-│   ├── OfficialStoreData.java       # 官方商店内存缓存
-│   ├── UniqueStoreData.java         # 特殊商店内存缓存 + NPC映射
-│   └── RecycleStoreData.java        # 回收物品内存缓存 + HashMap匹配
-├── File/
-│   ├── FileManager.java             # 协调各Manager初始化和加载
-│   ├── PlayerStoreManager.java      # 玩家商品的加载/保存
-│   ├── OfficialStoreManager.java    # 官方商店的加载/保存
-│   ├── UniqueStoreManager.java      # 特殊商店的加载/保存
-│   ├── RecycleStoreManager.java     # 回收物品的加载/保存
-│   ├── TransactionManager.java      # 交易记录与离线收益
-│   └── SellManager.java             # 出售流程管理
-├── Inventory/
-│   └── ChatInput.java               # 聊天输入监听（价格/备注）
+│   ├── StoreCommand.java       # /store 子命令分发
+│   └── StoreTabCompleter.java  # Tab补全（职责分离）
+├── Data/                       # 内存缓存层（ConcurrentHashMap）
+│   ├── UniqueStoreData.java    # NPC商店 + NPC映射 + 皮肤映射
+│   ├── OfficialStoreData.java  # 官方商店
+│   ├── PlayerStoreData.java    # 玩家商店
+│   └── RecycleStoreData.java   # 回收物品（Base64序列化键 → O(1)匹配）
+├── File/                       # 持久化层
+│   ├── FileManager.java        # 统一初始化/加载/保存入口
+│   ├── UniqueStoreManager.java # NPC商店 + npcList.yml（含皮肤持久化）
+│   ├── PlayerStoreManager.java # 玩家商品 BukkitObject 序列化
+│   ├── OfficialStoreManager.java
+│   ├── RecycleStoreManager.java
+│   ├── TransactionManager.java # 交易记录CSV + 离线经验补发
+│   └── SellManager.java        # 出售流程状态机（聊天输入）
+├── Listener/                   # 事件驱动交互
+│   ├── EntityClickEvent.java   # NPC右键 → entityId O(1)查表打开商店
+│   ├── PlayerStoreListener.java
+│   ├── OfficialStoreListener.java
+│   ├── UniqueStoreListener.java
+│   ├── RecycleStoreListener.java
+│   ├── QuickMenuListener.java  # F键蹲下触发
+│   └── PlayerJoinListener.java # 登录补发经验 + NPC可见性同步
+├── Menu/                       # GUI构建（纯展示，无状态）
 ├── NPC/
-│   └── InitNPC.java                 # 创建NPC并注册映射
+│   ├── NPCManager.java         # NPC生命周期 + 数据包广播 + 朝向追踪
+│   ├── InitNPC.java            # 创建NPC并注册映射
+│   └── SkinFetcher.java        # Mojang API异步皮肤获取
+├── Inventory/
+│   └── ChatInput.java          # 聊天输入路由
 └── Util/
-    └── MethodUtil.java              # 工具方法：物品发放、购买处理、坐标编码
+    └── MethodUtil.java         # 购买/发放/坐标编码/NPC查找
 ```
+
+
+### 性能设计要点
+
+| 设计 | 说明 |
+|------|------|
+| ConcurrentHashMap 缓存 | Data 层全部使用 ConcurrentHashMap，NPC映射、皮肤映射、商品数据均为 O(1) 读写，异步操作线程安全 |
+| entityId → npcKey 反查表 | `EntityClickEvent` 通过 `entityIdToKey` 直接 O(1) 定位NPC，无需遍历所有NPC实体 |
+| 事件驱动而非轮询 | 商店交互、购买、回收全部基于 Bukkit 事件监听，不使用定时任务轮询状态 |
+| 异步皮肤获取 | Mojang API 请求在异步线程执行，结果回调主线程应用，不阻塞服务器主循环 |
+| 按需数据包广播 | NPC 的生成/移除/元数据变更通过手动构造数据包发送给在线玩家，避免依赖实体 tracker 的全量同步 |
+| 回收物品 Base64 键匹配 | 将 ItemStack 序列化为 Base64 字符串作为 HashMap 键，O(1) 判断物品是否可回收，无需逐项比对 |
+| 出售流程状态机 | SellManager 用 Set/Map 管理玩家出售状态，3分钟超时自动清理，避免内存泄漏 |
 
 ### 数据文件
 
 ```
 plugins/Store/
 ├── data.yml              # 玩家商品元数据
-├── npcList.yml           # NPC映射：商店ID → world_x_y_z
-├── OfficialData.yml      # 官方商店商品元数据
-├── payback.yml           # 离线卖家待发放经验
-├── Records.csv           # 交易日志
-├── items/                # 玩家商品序列化文件
-├── officialStores/       # 特殊商店商品序列化文件
-├── OfficialItems/        # 官方商店商品序列化文件
+├── npcList.yml           # NPC映射 + 皮肤持久化
+├── OfficialData.yml      # 官方商店元数据
+├── payback.yml           # 离线经验补发队列
+├── Records.csv           # 交易审计日志
 ├── RecycleData.yml       # 回收物品元数据
-└── RecycleItems/         # 回收物品序列化文件
+├── items/                # 玩家商品序列化
+├── OfficialItems/        # 官方商品序列化
+├── RecycleItems/         # 回收物品序列化
+└── UniqueStores/         # NPC商店商品序列化
 ```
 
----
+## 命令
 
-## 使用方法
-
-### 玩家命令
-
-| 命令 | 说明 |
-|------|------|
-| `/store` | 打开玩家商店 |
-| `/store player` | 同上 |
-| `/store official` | 打开官方商店 |
-| `/store recycle` | 打开回收商店 |
-
-**快捷打开**：在 `world` 世界中蹲下按 `F` 键打开选择菜单
-
-**出售物品流程**：
-1. 执行 `/store` 打开玩家商店
-2. 点击左上角的 **向日葵** 图标
-3. 将要出售的物品放入界面，关闭界面
-4. 在聊天栏输入 **价格**（纯数字）
-5. 输入 **备注**（输入"无"表示无备注）
-6. 商品上架成功
-
-**购买物品**：
-1. 在玩家商店点击商品查看详情
-2. 点击右下角 **金锭** 确认购买
-3. 经验等级足够则购买成功，物品存入背包
-
-**下架/撤回**：
-- 列表页右键自己的商品 → 下架整个商品，物品返还
-- 详情页右键单个物品 → 撤回该物品，商品为空则自动下架
-
-### 管理员命令（需OP）
-
-| 命令 | 说明 |
-|------|------|
-| `/store create <ID>` | 在当前位置创建特殊商店NPC |
-| `/store add <价格> [备注]` | 将手持物品添加到最近的NPC特殊商店 |
-| `/store update <价格> [备注]` | 将手持物品添加到官方商店 |
-| `/store check <ID>` | 打开指定ID的特殊商店 |
-| `/store destroy <ID>` | 删除指定特殊商店及其数据 |
-| `/store cycle <经验等级>` | 将手持物品设为可回收物品（数量为兑换单位） |
-| `/store reload` | 重载插件数据并重建所有NPC |
-
-### 依赖
-
-- Spigot/Paper 1.20.1+
-- [Citizens](https://www.spigotmc.org/resources/citizens.13811/) 插件（用于NPC创建）
-
----
-
-## 颜色规范
-
-| 代码 | 颜色 | 用途 |
+| 命令 | 权限 | 说明 |
 |------|------|------|
-| `§e` | 黄色 | 重点高亮 |
-| `§b` | 青色 | 次要高亮 |
-| `§f` | 白色 | 普通文本 |
-| `§7` | 灰色 | 系统提示 |
+| `/store` | 所有人 | 打开玩家商店 |
+| `/store official` | 所有人 | 打开官方商店 |
+| `/store recycle` | 所有人 | 打开回收商店 |
+| `/store create <ID>` | OP | 创建NPC商店 |
+| `/store destroy <ID>` | OP | 删除NPC商店 |
+| `/store add <价格> [备注]` | OP | 添加商品到最近NPC商店 |
+| `/store update <价格> [备注]` | OP | 添加商品到官方商店 |
+| `/store check <ID>` | OP | 打开指定NPC商店 |
+| `/store setskin <正版ID>` | OP | 设置最近NPC皮肤 |
+| `/store cycle <经验等级>` | OP | 设置可回收物品 |
+| `/store reload` | OP | 重载数据并重建NPC |
+
+快捷方式：`world` 世界蹲下按 `F` 键打开选择菜单

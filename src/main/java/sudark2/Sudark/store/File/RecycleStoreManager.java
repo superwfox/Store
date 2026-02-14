@@ -84,12 +84,4 @@ public class RecycleStoreManager {
         return null;
     }
 
-    public static void cleanupItemFiles() {
-        File[] files = itemsFolder.listFiles();
-        if (files != null) {
-            for (File f : files) {
-                f.delete();
-            }
-        }
-    }
 }

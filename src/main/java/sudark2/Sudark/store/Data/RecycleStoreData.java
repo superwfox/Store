@@ -18,10 +18,6 @@ public class RecycleStoreData {
             this.item = item;
             this.expLevel = expLevel;
         }
-
-        public int getRequiredAmount() {
-            return item.getAmount();
-        }
     }
 
     public static String getItemKey(ItemStack item) {
@@ -41,13 +37,10 @@ public class RecycleStoreData {
     public static void addItem(ItemStack item, int expLevel) {
         String key = getItemKey(item);
         if (key != null) {
-            recycleMap.put(key, new RecycleItem(item.clone(), expLevel));
+            ItemStack normalized = item.clone();
+            normalized.setAmount(1);
+            recycleMap.put(key, new RecycleItem(normalized, expLevel));
         }
-    }
-
-    public static RecycleItem findMatch(ItemStack item) {
-        String key = getItemKey(item);
-        return key != null ? recycleMap.get(key) : null;
     }
 
     public static Map<String, RecycleItem> getAll() {

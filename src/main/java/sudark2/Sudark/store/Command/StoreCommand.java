@@ -63,8 +63,10 @@ public class StoreCommand implements CommandExecutor {
                 break;
 
             case "recycle":
-                if (MethodUtil.isLocValid(p))
+                if (MethodUtil.isLocValid(p)) {
                     RecycleStoreMenu.open(p);
+                    p.sendMessage("§7放入物品后关闭界面自动回收");
+                }
                 break;
 
             case "cycle":
@@ -83,9 +85,17 @@ public class StoreCommand implements CommandExecutor {
                 }
                 try {
                     int expLevel = Integer.parseInt(args[1]);
+                    if (expLevel <= 0) {
+                        p.sendMessage("§7经验等级必须大于0");
+                        return true;
+                    }
+                    if (RecycleStoreData.getItemKey(cycleHand) == null) {
+                        p.sendMessage("§7该物品无法加入回收配置");
+                        return true;
+                    }
                     RecycleStoreData.addItem(cycleHand.clone(), expLevel);
                     RecycleStoreManager.saveAll();
-                    p.sendMessage("§7已添加可回收物品: §e" + cycleHand.getAmount() + "x §f-> §b" + expLevel + " §f经验等级");
+                    p.sendMessage("§7已添加可回收物品: §e" + cycleHand.getType() + " §6： " + expLevel + "§f经验等级");
                 } catch (NumberFormatException e) {
                     p.sendMessage("§7经验等级必须为整数");
                 }

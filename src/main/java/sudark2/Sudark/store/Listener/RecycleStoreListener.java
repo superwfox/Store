@@ -11,7 +11,6 @@ import sudark2.Sudark.store.Data.RecycleStoreData;
 import sudark2.Sudark.store.Menu.RecycleStoreMenu;
 import sudark2.Sudark.store.Util.MethodUtil;
 
-import java.util.HashMap;
 import java.util.Map;
 
 public class RecycleStoreListener implements Listener {
@@ -20,53 +19,53 @@ public class RecycleStoreListener implements Listener {
     public void onRecycleClose(InventoryCloseEvent e) {
         if (!(e.getPlayer() instanceof Player p))
             return;
-        if (!e.getView().getTitle().equals(RecycleStoreMenu.TITLE))
+        if (!RecycleStoreMenu.TITLE.equals(e.getView().getTitle()))
             return;
 
-        Map<String, Integer> collected = new HashMap<>();
-        int totalExp = 0;
-        boolean hasShortage = false;
+        Map<String, RecycleStoreData.RecycleItem> recycleMap = RecycleStoreData.getAll();
+        long totalExp = 0;
+        boolean returnedAnyItem = false;
+        boolean hasInput = false;
 
         for (ItemStack item : e.getInventory().getContents()) {
             if (item == null || item.getType() == Material.AIR)
                 continue;
+            hasInput = true;
 
-            String key = RecycleStoreData.getItemKey(item);
-            RecycleStoreData.RecycleItem recycleItem = key != null ? RecycleStoreData.getAll().get(key) : null;
+            RecycleStoreData.RecycleItem recycleItem = getRecycleItem(item, recycleMap);
 
-            if (recycleItem == null) {
+            if (recycleItem == null || recycleItem.expLevel <= 0) {
                 MethodUtil.giveItem(p, item);
+                returnedAnyItem = true;
             } else {
-                collected.merge(key, item.getAmount(), Integer::sum);
-            }
-        }
-
-        for (var entry : collected.entrySet()) {
-            RecycleStoreData.RecycleItem recycleItem = RecycleStoreData.getAll().get(entry.getKey());
-            int required = recycleItem.getRequiredAmount();
-            int times = entry.getValue() / required;
-            int remainder = entry.getValue() % required;
-
-            totalExp += recycleItem.expLevel * times;
-
-            if (remainder > 0) {
-                ItemStack returnItem = recycleItem.item.clone();
-                returnItem.setAmount(remainder);
-                MethodUtil.giveItem(p, returnItem);
-                hasShortage = true;
+                totalExp += (long) recycleItem.expLevel * item.getAmount();
             }
         }
 
         if (totalExp > 0) {
-            p.setLevel(p.getLevel() + totalExp);
-            p.sendMessage("§e回收成功 §f+§b" + totalExp + " §f经验等级");
+            int gained = (int) Math.min(Integer.MAX_VALUE, totalExp);
+            int newLevel = (int) Math.min(Integer.MAX_VALUE, (long) p.getLevel() + gained);
+            p.setLevel(newLevel);
+            p.sendMessage("§e回收成功 §f+§b" + gained + " §f经验等级");
+            if (returnedAnyItem)
+                p.sendMessage("§7不可回收物品已返还");
             p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_YES, 1, 1);
         } else {
+            if (!hasInput) {
+                p.sendMessage("§7未放入任何物品");
+            } else if (returnedAnyItem) {
+                p.sendMessage("§7未检测到可回收物品，物品已返还");
+            } else {
+                p.sendMessage("§7未检测到有效回收配置");
+            }
             p.playSound(p.getLocation(), Sound.ENTITY_VILLAGER_NO, 1, 1);
         }
+    }
 
-        if (hasShortage) {
-            p.sendMessage("§7部分物品数量不足，已返还");
-        }
+    private RecycleStoreData.RecycleItem getRecycleItem(ItemStack item, Map<String, RecycleStoreData.RecycleItem> recycleMap) {
+        String key = RecycleStoreData.getItemKey(item);
+        if (key == null)
+            return null;
+        return recycleMap.get(key);
     }
 }

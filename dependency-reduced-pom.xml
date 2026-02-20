@@ -4,7 +4,7 @@
   <groupId>sudark2.Sudark</groupId>
   <artifactId>Store</artifactId>
   <name>Store</name>
-  <version>4.0</version>
+  <version>4.1</version>
   <build>
     <defaultGoal>clean package</defaultGoal>
     <resources>
